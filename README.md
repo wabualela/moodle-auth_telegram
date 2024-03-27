@@ -1,1 +1,1 @@
-# Moodle authentication pluing with telegram login widget
+# Moodle authentication plugin with Telegram login widget
