@@ -5,41 +5,51 @@ Welcome to the Moodle Authentication Plugin with Telegram Login Widget! This plu
 **Installation Steps:**
 
 1. **Download the Plugin:**
+
    - Clone the repository or download the plugin ZIP file from the GitHub repository.
 
 2. **Upload to Moodle:**
+
    - Upload the plugin folder to the `auth` directory in your Moodle installation directory.
 
 3. **Install the Plugin:**
+
    - Log in to your Moodle site as an administrator.
-   - Navigate to **Site Administration** > **Notifications**.
-   - Moodle will detect the new plugin and prompt you to install it. Follow the on-screen instructions to complete the installation process.
+   - Navigate to **Site Administration** > **Plugins** > **Install plugins**.
+   - Drag and drop the ZIP file containing the plugin or choose the file manually.
+   - Follow the on-screen instructions to complete the installation process.
 
 4. **Enable Telegram Authentication:**
+
    - After installation, navigate to **Site Administration** > **Plugins** > **Authentication** > **Manage authentication**.
    - Enable the "Telegram" authentication method.
 
 5. **Configure Telegram Authentication:**
+
    - Click on **Settings** next to the Telegram authentication method.
-   - Enter your Telegram bot's username in the designated field.
+   - Enter your Telegram bot's username and secret key in the designated fields.
    - Save the settings.
 
 **Setting Up Telegram Bot:**
 
 1. **Create a Telegram Bot:**
+
    - Open the Telegram app and search for the "BotFather" user.
    - Start a conversation with BotFather and follow the prompts to create a new bot.
    - Note down the bot's username provided by BotFather.
 
 2. **Obtain Bot Token:**
+
    - After creating the bot, BotFather will provide you with a token. Note down this token as it will be used to authenticate your bot with Telegram's API.
 
 3. **Add Domain to Bot:**
+
    - To restrict bot access to your domain, navigate to your bot's settings in BotFather.
    - Add your Moodle site's domain to the allowed domains list.
 
 4. **Configure Moodle Plugin:**
-   - In the Moodle plugin settings, enter your bot's username in the designated field.
+
+   - In the Moodle plugin settings, enter your bot's username and secret key in the designated fields.
 
 **Usage:**
 
