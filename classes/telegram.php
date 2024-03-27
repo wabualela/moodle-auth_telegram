@@ -31,28 +31,30 @@ class telegram {
     /**
      * create a new user
      * @param array $data
-     * @return void
+     * @return stdClass
      */
-    public static function create_user($data) {
+    public static function create_user($data): stdClass {
         global $CFG, $DB;
 
-        $user              = new stdClass();
-        $user->auth        = "telegram";
-        $user->username    = $data['telegramid'];
-        $user->firstname   = $data['firstname'];
-        $user->lastname    = $data['lastname'];
-        $user->confirmed   = 1;
-        $user->mnethostid  = 1;
-        $user->firstaccess = 0;
-        $user->timecreated = time();
-        $user->password    = '';
-        $user->email       = $data['email'];
-        $user->phone1      = $data['phone'];
-        if (empty ($user->calendartype)) {
-            $user->calendartype = $CFG->calendartype;
-        }
-        $user->id = user_create_user($user, false, false);
+        $user               = new stdClass();
+        $user->auth         = "telegram";
+        $user->username     = $data['telegramid'];
+        $user->firstname    = $data['firstname'];
+        $user->lastname     = $data['lastname'];
+        $user->confirmed    = 1;
+        $user->mnethostid   = 1;
+        $user->firstaccess  = time();
+        $user->timecreated  = time();
+        $user->lastlogin    = time();
+        $user->lastaccess   = time();
+        $user->password     = '';
+        $user->email        = $data['email'];
+        $user->phone1       = $data['phone'];
+        $user->calendartype = $CFG->calendartype;
+        $user->id           = user_create_user($user, false, false);
         profile_save_data($user);
+
+        return $user;
     }
 
     /**

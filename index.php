@@ -71,10 +71,15 @@ function check_tel_authorization($data): array {
  * @return void
  */
 function user_authentication($data) {
-
     $user = \auth_telegram\telegram::user_exists($data['id'])
         ? \auth_telegram\telegram::get_user($data['id'])
-        : \auth_telegram\telegram::create_user($data);
+        : \auth_telegram\telegram::create_user([
+            'telegramid' => $data['id'],
+            'firstname'  => $data['first_name'],
+            'lastname'   => $data['last_name'],
+            'email'      => $data['id'] . '@example.com',
+            'phone'      => ''
+        ]);
 
     \auth_telegram\telegram::user_login($user);
 
