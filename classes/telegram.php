@@ -47,6 +47,8 @@ class telegram {
         $user->timecreated  = time();
         $user->lastlogin    = time();
         $user->lastaccess   = time();
+        $user->currentlogin = time();
+        $user->lastip       = getremoteaddr();
         $user->password     = '';
         $user->email        = $data['email'];
         $user->phone1       = $data['phone'];
