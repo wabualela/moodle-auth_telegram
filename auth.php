@@ -27,7 +27,8 @@ require_once ($CFG->libdir . '/authlib.php');
  * @copyright  2024 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class auth_plugin_telegram extends auth_plugin_base {
+class auth_plugin_telegram extends auth_plugin_base
+{
     /**
      * telegram componenet name
      * @var string
@@ -37,7 +38,8 @@ class auth_plugin_telegram extends auth_plugin_base {
     /**
      * telegram auth constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->authtype = 'telegram';
         $this->config   = get_config(self::COMPONENT_NAME);
     }
@@ -46,7 +48,8 @@ class auth_plugin_telegram extends auth_plugin_base {
      * Login page Hook overrides
      * @return void
      */
-    public function loginpage_hook(): void {
+    public function loginpage_hook(): void
+    {
         global $PAGE, $CFG;
         echo "<script type='text/javascript'>
                 var botusername = " . json_encode(get_config('auth_telegram', 'botusername')) . ";
@@ -54,6 +57,19 @@ class auth_plugin_telegram extends auth_plugin_base {
         $PAGE->requires->jquery();
         $PAGE->requires->js(new moodle_url("$CFG->wwwroot/auth/telegram/script.js"));
 
+    }
+
+    public function loginpage_idp_list($wantsurl) {
+        $result = [];
+        if (empty($wantsurl)) {
+            $wantsurl = '/';
+        }
+        $params   = [ 'id' => 1, 'wantsurl' => $wantsurl, 'sesskey' => sesskey()];
+        $url      = new moodle_url('/auth/telegram/login.php', $params);
+        $icon     = new moodle_url('/auth/telegram/pix/telegram.png');
+        $result[] = [ 'url' => $url, 'iconurl' => $icon, 'name' => get_string('pluginname', 'auth_telegram') ];
+
+        return $result;
     }
 
 }
