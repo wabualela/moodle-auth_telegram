@@ -16,9 +16,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once ($CFG->libdir . "/formslib.php");
-require_once ($CFG->libdir . '/formslib.php');
-require_once ($CFG->libdir . '/authlib.php');
+require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->libdir . '/authlib.php');
 
 /**
  * Telegram authentication plugin.
