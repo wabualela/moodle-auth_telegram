@@ -81,9 +81,9 @@ if (\core_auth\digital_consent::is_age_digital_consent_verification_enabled()) {
 // Can be used to force additional actions before sign up such as acceptance of policies, validations, etc.
 core_login_pre_signup_requests();
 
-
-$mform_signup = ;
+$mform_signup = new \auth_telegram\form\login();
 
 $PAGE->set_heading($SITE->fullname);
 echo $OUTPUT->header();
+$mform_signup->display();
 echo $OUTPUT->footer();
