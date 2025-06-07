@@ -60,9 +60,10 @@ class telegram {
     }
 
     /**
-     * get user by telegram identifier as username
-     * @param string $telegramid
-     * @return stdClass
+     * Check if a user exists for the provided Telegram identifier.
+     *
+     * @param string $telegramid Telegram user ID used as the Moodle username.
+     * @return bool True if the user exists, false otherwise.
      */
     public static function user_exists($telegramid): bool {
         global $DB;
@@ -78,9 +79,10 @@ class telegram {
 
 
     /**
-     * Get user by telelgramid as username
-     * @param string $telegramid
-     * @return stdClass
+     * Retrieve a user by Telegram identifier used as username.
+     *
+     * @param string $telegramid Telegram user ID used as the Moodle username.
+     * @return stdClass User record matching the Telegram ID.
      */
     public static function get_user($telegramid): stdClass {
         global $DB;

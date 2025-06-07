@@ -83,10 +83,8 @@ function user_authentication($data) {
 
     \auth_telegram\telegram::user_login($user);
 
-    // Create logged in user session.
-    $_SESSION = [
-        'logged-in'   => true,
-        'telegram_id' => $data['id'],
-    ];
+    // Mark the session as logged in via Telegram without overwriting existing data.
+    $_SESSION['logged-in'] = true;
+    $_SESSION['telegram_id'] = $data['id'];
 }
 
