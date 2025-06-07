@@ -28,6 +28,6 @@ $string['pluginname']            = 'Telegram';
 $string['telegrambottoken']      = 'Bot token';
 $string['telegrambottoken_help'] = 'Telegram bot token ';
 $string['hello']                 = 'Hello World';
-$string['notenabled']            = 'Sorry, Teleram authentication plugin is not enabled';
+$string['notenabled']            = 'Sorry, Telegram authentication plugin is not enabled';
 $string['missingtelegramid']     = 'Missing telegramid';
 
