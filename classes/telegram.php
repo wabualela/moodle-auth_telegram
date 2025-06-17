@@ -18,6 +18,10 @@ namespace auth_telegram;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->libdir.'/authlib.php');
+require_once($CFG->dirroot.'/user/lib.php');
+require_once($CFG->dirroot.'/user/profile/lib.php');
+
 use stdClass;
 
 /**
@@ -37,29 +41,29 @@ class telegram
     public static function create_user($data): stdClass {
         global $CFG, $DB;
 
-        $user = new stdClass();
-        $user->auth = "telegram";
-        $user->username = $data['username'];
-        $user->firstname = $data['first_name'];
-        $user->lastname = $data['last_name'];
-        $user->confirmed = 1;
-        $user->mnethostid = 1;
-        $user->firstaccess = time();
-        $user->timecreated = time();
-        $user->lastlogin = time();
-        $user->lastaccess = time();
-        $user->currentlogin = time();
-        $user->lastip = getremoteaddr();
-        $user->password = '';
-        $user->email = '';
-        $user->phone1 = '';
-        $user->calendartype = $CFG->calendartype;
+        $user                    = new stdClass();
+        $user->auth              = "telegram";
+        $user->username          = $data['username'];
+        $user->firstname         = $data['first_name'];
+        $user->lastname          = $data['last_name'];
+        $user->confirmed         = 1;
+        $user->mnethostid        = 1;
+        $user->firstaccess       = time();
+        $user->timecreated       = time();
+        $user->lastlogin         = time();
+        $user->lastaccess        = time();
+        $user->currentlogin      = time();
+        $user->lastip            = getremoteaddr();
+        $user->password          = '';
+        $user->email             = '';
+        $user->phone1            = '';
+        $user->calendartype      = $CFG->calendartype;
         $user->firstnamephonetic = '';
-        $user->lastnamephonetic = '';
-        $user->middlename = '';
-        $user->alternatename = '';
-        $user->lang = $CFG->lang;
-        $user->timezone = $CFG->timezone;
+        $user->lastnamephonetic  = '';
+        $user->middlename        = '';
+        $user->alternatename     = '';
+        $user->lang              = $CFG->lang;
+        $user->timezone          = $CFG->timezone;
 
 
         $user->id = user_create_user($user, false, false);
@@ -82,8 +86,8 @@ class telegram
         return $DB->record_exists(
             'user',
             array(
-                'username' => $telegramid,
-                'deleted' => false,
+                'username'  => $telegramid,
+                'deleted'   => false,
                 'confirmed' => true,
             ),
         );
@@ -101,8 +105,8 @@ class telegram
         return $DB->get_record(
             'user',
             array(
-                'username' => $telegramid,
-                'deleted' => false,
+                'username'  => $telegramid,
+                'deleted'   => false,
                 'confirmed' => true,
             ),
         );
@@ -149,17 +153,17 @@ class telegram
 
         // Create temporary storage for the new image
         $context = \context_user::instance($user->id);
-        $fs = get_file_storage();
+        $fs      = get_file_storage();
         $fs->delete_area_files($context->id, 'user', 'newicon');
 
         // Store the image data in a file
         $filerecord = array(
             'contextid' => $context->id,
             'component' => 'user',
-            'filearea' => 'newicon',
-            'itemid' => 0,
-            'filepath' => '/',
-            'filename' => 'image'
+            'filearea'  => 'newicon',
+            'itemid'    => 0,
+            'filepath'  => '/',
+            'filename'  => 'image'
         );
 
         // Process the image and set it as user's picture
@@ -178,10 +182,10 @@ class telegram
             $fs->delete_area_files($context->id, 'user', 'newicon');
 
             // Update user record with new picture ID
-            $updateuser = new stdClass();
-            $updateuser->id = $user->id;
+            $updateuser          = new stdClass();
+            $updateuser->id      = $user->id;
             $updateuser->picture = $newpicture;
-            $USER->picture = $newpicture;
+            $USER->picture       = $newpicture;
             user_update_user($updateuser);
             return true;
         } catch (\file_exception $e) {
