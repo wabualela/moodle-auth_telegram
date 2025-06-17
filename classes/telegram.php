@@ -27,7 +27,8 @@ use stdClass;
  * @copyright  2024 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class telegram {
+class telegram
+{
     /**
      * create a new user
      * @param array $data
@@ -36,25 +37,36 @@ class telegram {
     public static function create_user($data): stdClass {
         global $CFG, $DB;
 
-        $user               = new stdClass();
-        $user->auth         = "telegram";
-        $user->username     = $data['telegramid'];
-        $user->firstname    = $data['firstname'];
-        $user->lastname     = $data['lastname'];
-        $user->confirmed    = 1;
-        $user->mnethostid   = 1;
-        $user->firstaccess  = time();
-        $user->timecreated  = time();
-        $user->lastlogin    = time();
-        $user->lastaccess   = time();
+        $user = new stdClass();
+        $user->auth = "telegram";
+        $user->username = $data['username'];
+        $user->firstname = $data['first_name'];
+        $user->lastname = $data['last_name'];
+        $user->confirmed = 1;
+        $user->mnethostid = 1;
+        $user->firstaccess = time();
+        $user->timecreated = time();
+        $user->lastlogin = time();
+        $user->lastaccess = time();
         $user->currentlogin = time();
-        $user->lastip       = getremoteaddr();
-        $user->password     = '';
-        $user->email        = $data['email'];
-        $user->phone1       = $data['phone'];
+        $user->lastip = getremoteaddr();
+        $user->password = '';
+        $user->email = '';
+        $user->phone1 = '';
         $user->calendartype = $CFG->calendartype;
-        $user->id           = user_create_user($user, false, false);
+        $user->firstnamephonetic = '';
+        $user->lastnamephonetic = '';
+        $user->middlename = '';
+        $user->alternatename = '';
+        $user->lang = $CFG->lang;
+        $user->timezone = $CFG->timezone;
+
+
+        $user->id = user_create_user($user, false, false);
+
         profile_save_data($user);
+
+        self::update_picture($user, $data['photo_url']);
 
         return $user;
     }
@@ -70,8 +82,8 @@ class telegram {
         return $DB->record_exists(
             'user',
             array(
-                'username'  => $telegramid,
-                'deleted'   => false,
+                'username' => $telegramid,
+                'deleted' => false,
                 'confirmed' => true,
             ),
         );
@@ -89,8 +101,8 @@ class telegram {
         return $DB->get_record(
             'user',
             array(
-                'username'  => $telegramid,
-                'deleted'   => false,
+                'username' => $telegramid,
+                'deleted' => false,
                 'confirmed' => true,
             ),
         );
@@ -113,4 +125,68 @@ class telegram {
             redirect('/');
         }
     }
+
+    /**
+     * Get a static user picture.
+     *
+     * @return string|null Base64 encoded image data or null if no image is available.
+     */
+    public static function update_picture($user, $photoUrl): bool {
+        global $CFG, $DB, $USER;
+
+        // Only proceeds if:
+        // - User doesn't already have a picture
+        // - Gravatar is not enabled
+        // - A picture was provided by OAuth
+        if (!empty($user->picture) || !empty($CFG->enablegravatar)) {
+            return false;
+        }
+
+        $picture = $photoUrl;
+        if (empty($picture)) {
+            return false;
+        }
+
+        // Create temporary storage for the new image
+        $context = \context_user::instance($user->id);
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id, 'user', 'newicon');
+
+        // Store the image data in a file
+        $filerecord = array(
+            'contextid' => $context->id,
+            'component' => 'user',
+            'filearea' => 'newicon',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'image'
+        );
+
+        // Process the image and set it as user's picture
+        try {
+            $fs->create_file_from_string($filerecord, $picture);
+            // Get file and process it
+            $iconfile = $fs->get_area_files($context->id, 'user', 'newicon', false, 'itemid', false);
+            $iconfile = reset($iconfile);
+            $iconfile = $iconfile->copy_content_to_temp();
+
+            // Process the image into proper user icon format
+            $newpicture = (int) process_new_icon($context, 'user', 'icon', 0, $iconfile);
+
+            // Clean up temporary files
+            @unlink($iconfile);
+            $fs->delete_area_files($context->id, 'user', 'newicon');
+
+            // Update user record with new picture ID
+            $updateuser = new stdClass();
+            $updateuser->id = $user->id;
+            $updateuser->picture = $newpicture;
+            $USER->picture = $newpicture;
+            user_update_user($updateuser);
+            return true;
+        } catch (\file_exception $e) {
+            return get_string($e->errorcode, $e->module, $e->a);
+        }
+    }
+
 }

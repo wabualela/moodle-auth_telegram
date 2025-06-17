@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+require_once('../../config.php');
+require_once($CFG->dirroot . '/user/profile/lib.php');
+require_once($CFG->dirroot . '/user/lib.php');
+
 /**
  * Handle telegram auth
  * @package    auth_telegram
@@ -21,70 +25,62 @@
  * @copyright  2024 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once ('../../config.php');
-require_once ($CFG->dirroot . '/user/profile/lib.php');
-require_once ($CFG->dirroot . '/user/lib.php');
 
 define('BOT_TOKEN', get_config('auth_telegram', 'bottoken'));
 
-if (!isset ($_GET['hash'])) { // The Telegram hash is required to authorize.
-    die ('Telegram hash not found');
+if (!isset($_GET['hash'])) { // The Telegram hash is required to authorize.
+    die('Telegram hash not found');
 }
 
 try {
-    $data = check_tel_authorization($_GET);
-    user_authentication($data);
+    $userinfo = check_tel_authorization($_GET);
+    user_authentication($userinfo);
 } catch (Exception $e) {
     throw new moodle_exception($e->getMessage());
 }
 
 /**
  * Check telegram auth data
- * @param array $data
+ * @param array $userinfo
  * @throws \Exception
  * @return array
  */
-function check_tel_authorization($data): array {
-    $checkhash = $data['hash'];
-    unset($data['hash']);
+function check_tel_authorization($userinfo): array {
+    $checkhash = $userinfo['hash'];
+    unset($userinfo['hash']);
     $datacheckarr = [];
-    foreach ($data as $key => $value) {
+    foreach ($userinfo as $key => $value) {
         $datacheckarr[] = $key . '=' . $value;
     }
     sort($datacheckarr);
     $datacheckstring = implode("\n", $datacheckarr);
-    $secretkey       = hash('sha256', BOT_TOKEN, true);
-    $hash            = hash_hmac('sha256', $datacheckstring, $secretkey);
+    $secretkey = hash('sha256', BOT_TOKEN, true);
+    $hash = hash_hmac('sha256', $datacheckstring, $secretkey);
     if (strcmp($hash, $checkhash) !== 0) {
         throw new Exception('Data is NOT from Telegram');
     }
-    if ((time() - $data['auth_date']) > 86400) {
+    if ((time() - $userinfo['auth_date']) > 86400) {
         throw new Exception('Data is outdated');
     }
-    return $data;
+    return $userinfo;
 }
 
 /**
  * Authenticates a user
- * @param array $data
+ * @param array $userinfo
  * @throws \Exception
  * @return void
  */
-function user_authentication($data) {
-    $user = \auth_telegram\telegram::user_exists($data['id'])
-        ? \auth_telegram\telegram::get_user($data['id'])
-        : \auth_telegram\telegram::create_user([
-            'telegramid' => $data['id'],
-            'firstname'  => $data['first_name'],
-            'lastname'   => $data['last_name'],
-            'email'      => $data['id'] . '@example.com',
-            'phone'      => ''
-        ]);
+function user_authentication($userinfo) {
+    $user = \auth_telegram\telegram::user_exists($userinfo['username'])
+        ? \auth_telegram\telegram::get_user($userinfo['username'])
+        : \auth_telegram\telegram::create_user($userinfo);
 
     \auth_telegram\telegram::user_login($user);
 
     // Mark the session as logged in via Telegram without overwriting existing data.
     $_SESSION['logged-in'] = true;
-    $_SESSION['telegram_id'] = $data['id'];
+    $_SESSION['telegram_id'] = $userinfo['id'];
 }
+
 

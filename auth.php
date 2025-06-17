@@ -37,8 +37,7 @@ class auth_plugin_telegram extends auth_plugin_base
     /**
      * telegram auth constructor
      */
-    public function __construct()
-    {
+    public function __construct() {
         $this->authtype = 'telegram';
         $this->config   = get_config(self::COMPONENT_NAME);
     }
@@ -47,28 +46,36 @@ class auth_plugin_telegram extends auth_plugin_base
      * Login page Hook overrides
      * @return void
      */
-    public function loginpage_hook(): void
-    {
+    public function loginpage_hook(): void {
         global $PAGE, $CFG;
-        echo "<script type='text/javascript'>
-                var botusername = " . json_encode(get_config('auth_telegram', 'botusername')) . ";
-            </script>";
-        $PAGE->requires->jquery();
-        $PAGE->requires->js(new moodle_url("$CFG->wwwroot/auth/telegram/script.js"));
+
+        $PAGE->requires->js_call_amd(
+            'auth_telegram/telegram',
+            'init',
+            [
+                get_config('auth_telegram', 'botusername'),
+                $CFG->wwwroot,
+            ]
+        );
 
     }
 
-    public function loginpage_idp_list($wantsurl) {
-        $result = [];
-        if (empty($wantsurl)) {
-            $wantsurl = '/';
-        }
-        $params   = [ 'id' => 1, 'wantsurl' => $wantsurl, 'sesskey' => sesskey()];
-        $url      = new moodle_url('/auth/telegram/login.php', $params);
-        $icon     = new moodle_url('/auth/telegram/pix/telegram.png');
-        $result[] = [ 'url' => $url, 'iconurl' => $icon, 'name' => get_string('pluginname', 'auth_telegram') ];
+    public function user_login($username, $password) {
+        global $DB;
 
-        return $result;
+        // Check if the user is already logged in.
+        if (isloggedin() && !isguestuser()) {
+            return true;
+        }
+
+        // Check if the user exists in the database.
+        if ($user = $DB->get_record('user', ['username' => $username], '*', MUST_EXIST)) {
+            // Set the user as logged in.
+            complete_user_login($user);
+            return true;
+        }
+
+        return false;
     }
 
 }
