@@ -30,4 +30,6 @@ $string['telegrambottoken_help'] = ' رمز بوت التليجرام';
 $string['hello']                 = 'مرحباااا';
 $string['notenabled']            = 'عذرًا ، لم يتم تمكين البرنامج المساعد المصادق على التلغرام';
 $string['missingtelegramid']     = 'معرف التلغرام مفقود';
+$string['missingfieldsheader']   = 'مطلوب معلومات إضافية للملف الشخصي';
+$string['missingfieldsmessage']  = 'حقول الملف الشخصي المطلوبة التالية مفقودة:';
 

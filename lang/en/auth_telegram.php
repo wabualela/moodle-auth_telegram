@@ -30,4 +30,6 @@ $string['telegrambottoken_help'] = 'Telegram bot token ';
 $string['hello']                 = 'Hello World';
 $string['notenabled']            = 'Sorry, Telegram authentication plugin is not enabled';
 $string['missingtelegramid']     = 'Missing telegramid';
+$string['missingfieldsheader']   = 'Additional profile information required';
+$string['missingfieldsmessage']  = 'The following required profile fields are missing:';
 
