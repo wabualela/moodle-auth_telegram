@@ -26,8 +26,7 @@ require_once($CFG->libdir . '/authlib.php');
  * @copyright  2024 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class auth_plugin_telegram extends auth_plugin_base
-{
+class auth_plugin_telegram extends auth_plugin_base {
     /**
      * telegram componenet name
      * @var string
@@ -47,16 +46,12 @@ class auth_plugin_telegram extends auth_plugin_base
      * @return void
      */
     public function loginpage_hook(): void {
-        global $PAGE, $CFG;
+        global $PAGE;
 
-        $PAGE->requires->js_call_amd(
-            'auth_telegram/telegram',
-            'init',
-            [
-                get_config('auth_telegram', 'botusername'),
-                $CFG->wwwroot,
-            ]
-        );
+        $PAGE->requires->js_call_amd('auth_telegram/telegram_login', 'init', [
+            get_config('auth_telegram', 'bot_username') ?: get_config('auth_telegram', 'botusername'),
+            get_config('auth_telegram', 'auth_url') ?: 'https://nl.moddaker.com'
+        ]);
 
     }
 
@@ -69,13 +64,31 @@ class auth_plugin_telegram extends auth_plugin_base
         }
 
         // Check if the user exists in the database.
-        if ($user = $DB->get_record('user', ['username' => $username], '*', MUST_EXIST)) {
+        if ($user = $DB->get_record('user', [ 'username' => $username ], '*', MUST_EXIST)) {
             // Set the user as logged in.
             complete_user_login($user);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Return a list of identity providers to display on the login page.
+     *
+     * @param string|moodle_url $wantsurl The requested URL.
+     * @return array List of arrays with keys url, iconurl and name.
+     */
+    public function loginpage_idp_list($wantsurl) {
+
+        return [
+            [
+                'id'      => 'telegram',
+                'url'     => new moodle_url('/auth/telegram/login.php', [ 'id' => 'telegram', 'wantsurl' => $wantsurl, 'sesskey' => sesskey()]),
+                'iconurl' => new moodle_url('/auth/telegram/pix/telegram_icon.png'),
+                'name'    => 'telegram',
+            ],
+        ];
     }
 
 }
