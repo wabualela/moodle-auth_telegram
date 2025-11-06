@@ -30,5 +30,8 @@ $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('login');
 
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('auth_telegram/script', []);
+echo $OUTPUT->render_from_template('auth_telegram/script', [
+  'botusername' => get_config('auth_telegram', 'bot_username') ?: get_config('auth_telegram', 'botusername'),
+  'authurl'     => new moodle_url('/auth/telegram/index.php') ?: (get_config('auth_telegram', 'auth_url') ?: 'https://nl.moddaker.com')
+]);
 echo $OUTPUT->footer();
