@@ -28,6 +28,8 @@ require_once($CFG->dirroot . '/user/lib.php');
 
 define('BOT_TOKEN', get_config('auth_telegram', 'bottoken'));
 
+$PAGE->set_context(context_system::instance());
+
 if (!isset($_GET['hash'])) { // The Telegram hash is required to authorize.
     die('Telegram hash not found');
 }
@@ -76,11 +78,44 @@ function user_authentication($userinfo) {
         ? \auth_telegram\telegram::get_user($userinfo['username'])
         : \auth_telegram\telegram::create_user($userinfo);
 
+    $missing = auth_telegram_get_missing_fields($user);
+    if (!empty($missing)) {
+        $_SESSION['auth_telegram_pending_user'] = $user;
+        $_SESSION['auth_telegram_missing_fields'] = $missing;
+        redirect(new moodle_url('/auth/telegram/missingfields.php'));
+    }
+
     \auth_telegram\telegram::user_login($user);
 
     // Mark the session as logged in via Telegram without overwriting existing data.
     $_SESSION['logged-in'] = true;
     $_SESSION['telegram_id'] = $userinfo['id'];
+}
+
+/**
+ * Check required and custom profile fields for missing values.
+ *
+ * @param \stdClass $user
+ * @return array Associative array of missing field identifiers mapped to labels.
+*/
+function auth_telegram_get_missing_fields($user): array {
+    $missingfields = [];
+
+    $requiredfields = ['firstname', 'lastname', 'email', 'city', 'country'];
+    foreach ($requiredfields as $field) {
+        if (empty($user->$field)) {
+            $missingfields[$field] = get_string($field);
+        }
+    }
+
+    $profilefields = profile_get_user_fields_with_data($user->id);
+    foreach ($profilefields as $field) {
+        if ($field->is_required() && empty($field->data)) {
+            $missingfields['profile_' . $field->field->shortname] = format_string($field->field->name);
+        }
+    }
+
+    return $missingfields;
 }
 
 
