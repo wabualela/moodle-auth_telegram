@@ -24,18 +24,11 @@
 
 require('../../config.php');
 
-
-$url = new moodle_url('/auth/telegram/test.php', []);
-$PAGE->set_url($url);
+$PAGE->set_url(new moodle_url('/auth/telegram/test.php', []));
 $PAGE->set_context(context_system::instance());
-
 $PAGE->set_heading($SITE->fullname);
-echo $OUTPUT->header();
+$PAGE->set_pagelayout('login');
 
-echo '<script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="lms_sandbox_bot" data-size="large" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
-<script type="text/javascript">
-  function onTelegramAuth(user) {
-    alert("Logged in as " + user.first_name + " " + user.last_name + " (" + user.id + (user.username ? ", @" + user.username : "") + ")");
-  }
-</script>';
+echo $OUTPUT->header();
+echo $OUTPUT->render_from_template('auth_telegram/script', []);
 echo $OUTPUT->footer();
