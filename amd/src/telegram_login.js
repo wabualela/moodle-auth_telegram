@@ -14,27 +14,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Telegram Login Widget Handler
+ * Placeholder module — the Telegram login flow uses a dedicated page (test.php)
+ * via loginpage_idp_list() and no longer requires a client-side modal.
+ *
+ * Retained so that any cached AMD references do not produce a 404.
  *
  * @module     auth_telegram/telegram_login
- * @copyright  2025 Wail Abualela
+ * @copyright  2026 Wail Abualela
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import $ from 'jquery';
-import ModalFactory from 'core/modal_factory';
-import Templates from 'core/templates';
-
-export const init = async () => {
-    $('a.login-identityprovider-btn:has(img[src*="telegram"])').on('click', function (e) {
-        e.preventDefault();
-        modal.show();
-        window.console.log('Telegram login clicked');
-    });
-
-    const modal = await ModalFactory.create({
-        title: 'Telegram Account',
-        body: Templates.render('auth_telegram/script', {}),
-        footer: 'An example footer content',
-    });
-};
+// Intentionally empty.

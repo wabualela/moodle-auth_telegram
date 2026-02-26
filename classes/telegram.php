@@ -18,43 +18,43 @@ namespace auth_telegram;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir.'/authlib.php');
-require_once($CFG->dirroot.'/user/lib.php');
-require_once($CFG->dirroot.'/user/profile/lib.php');
+require_once($CFG->libdir . '/authlib.php');
+require_once($CFG->dirroot . '/user/lib.php');
+require_once($CFG->dirroot . '/user/profile/lib.php');
 
 use stdClass;
 
 /**
- * Class telegram
+ * Telegram user management helper.
  *
  * @package    auth_telegram
- * @copyright  2024 Wail Abualela <wailabualela@email.com>
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class telegram
-{
+class telegram {
     /**
-     * create a new user
-     * @param array $data
-     * @return stdClass
+     * Create a new Moodle user from Telegram data.
+     *
+     * @param array $data Verified Telegram user data.
+     * @return stdClass Newly created user record.
      */
     public static function create_user($data): stdClass {
         global $CFG, $DB;
 
         $user                    = new stdClass();
-        $user->auth              = "telegram";
-        $user->username          = $data['username'];
-        $user->firstname         = $data['first_name'];
-        $user->lastname          = $data['last_name'];
+        $user->auth              = 'telegram';
+        $user->username          = 'telegram_' . $data['id'];
+        $user->firstname         = $data['first_name'] ?? '';
+        $user->lastname          = $data['last_name'] ?? '';
         $user->confirmed         = 1;
-        $user->mnethostid        = 1;
+        $user->mnethostid        = $CFG->mnet_localhost_id;
         $user->firstaccess       = time();
         $user->timecreated       = time();
         $user->lastlogin         = time();
         $user->lastaccess        = time();
         $user->currentlogin      = time();
         $user->lastip            = getremoteaddr();
-        $user->password          = '';
+        $user->password          = AUTH_PASSWORD_NOT_CACHED;
         $user->email             = '';
         $user->phone1            = '';
         $user->calendartype      = $CFG->calendartype;
@@ -65,58 +65,56 @@ class telegram
         $user->lang              = $CFG->lang;
         $user->timezone          = $CFG->timezone;
 
-
         $user->id = user_create_user($user, false, false);
 
         profile_save_data($user);
 
-        self::update_picture($user, $data['photo_url']);
+        self::update_picture($user, $data['photo_url'] ?? '');
 
         return $user;
     }
 
     /**
-     * Check if a user exists for the provided Telegram identifier.
+     * Check if a Moodle user exists for the given Telegram ID.
      *
-     * @param string $telegramid Telegram user ID used as the Moodle username.
+     * @param string $telegramid Telegram numeric user ID.
      * @return bool True if the user exists, false otherwise.
      */
     public static function user_exists($telegramid): bool {
         global $DB;
         return $DB->record_exists(
             'user',
-            array(
-                'username'  => $telegramid,
-                'deleted'   => false,
-                'confirmed' => true,
-            ),
+            [
+                'username'  => 'telegram_' . $telegramid,
+                'deleted'   => 0,
+                'confirmed' => 1,
+            ],
         );
     }
 
-
     /**
-     * Retrieve a user by Telegram identifier used as username.
+     * Retrieve a Moodle user by Telegram ID.
      *
-     * @param string $telegramid Telegram user ID used as the Moodle username.
+     * @param string $telegramid Telegram numeric user ID.
      * @return stdClass User record matching the Telegram ID.
      */
     public static function get_user($telegramid): stdClass {
         global $DB;
         return $DB->get_record(
             'user',
-            array(
-                'username'  => $telegramid,
-                'deleted'   => false,
-                'confirmed' => true,
-            ),
+            [
+                'username'  => 'telegram_' . $telegramid,
+                'deleted'   => 0,
+                'confirmed' => 1,
+            ],
         );
     }
 
     /**
-     * authenticate the user
-     * @param \stdClass $user
-     * @param string $wantsurl
-     * @throws \Exception
+     * Complete the Moodle login session for the given user.
+     *
+     * @param \stdClass  $user     The user to log in.
+     * @param string|null $wantsurl Optional redirect URL after login.
      * @return void
      */
     public static function user_login($user, $wantsurl = null) {
@@ -131,57 +129,63 @@ class telegram
     }
 
     /**
-     * Get a static user picture.
+     * Update a user's profile picture from a Telegram photo URL.
      *
-     * @return string|null Base64 encoded image data or null if no image is available.
+     * Returns false early when the user already has a picture, gravatar is
+     * enabled, or no photo URL was supplied.
+     *
+     * @param \stdClass $user     User whose picture should be updated.
+     * @param string    $photourl Telegram photo URL (may be empty).
+     * @return bool True on success, false otherwise.
      */
-    public static function update_picture($user, $photoUrl): bool {
-        global $CFG, $DB, $USER;
+    public static function update_picture($user, $photourl): bool {
+        global $CFG, $USER;
 
-        // Only proceeds if:
-        // - User doesn't already have a picture
-        // - Gravatar is not enabled
-        // - A picture was provided by OAuth
         if (!empty($user->picture) || !empty($CFG->enablegravatar)) {
             return false;
         }
 
-        $picture = $photoUrl;
-        if (empty($picture)) {
+        if (empty($photourl)) {
             return false;
         }
 
-        // Create temporary storage for the new image
+        // Download image content from URL.
+        $imagedata = download_file_content($photourl);
+        if (empty($imagedata)) {
+            return false;
+        }
+
+        // Create temporary storage for the new image.
         $context = \context_user::instance($user->id);
         $fs      = get_file_storage();
         $fs->delete_area_files($context->id, 'user', 'newicon');
 
-        // Store the image data in a file
-        $filerecord = array(
+        // Store the image data in a temporary file area.
+        $filerecord = [
             'contextid' => $context->id,
             'component' => 'user',
             'filearea'  => 'newicon',
             'itemid'    => 0,
             'filepath'  => '/',
-            'filename'  => 'image'
-        );
+            'filename'  => 'image',
+        ];
 
-        // Process the image and set it as user's picture
+        // Process the image and set it as the user's picture.
         try {
-            $fs->create_file_from_string($filerecord, $picture);
-            // Get file and process it
+            $fs->create_file_from_string($filerecord, $imagedata);
+            // Get the stored file and copy to a temporary path.
             $iconfile = $fs->get_area_files($context->id, 'user', 'newicon', false, 'itemid', false);
             $iconfile = reset($iconfile);
             $iconfile = $iconfile->copy_content_to_temp();
 
-            // Process the image into proper user icon format
+            // Process the image into the proper user icon format.
             $newpicture = (int) process_new_icon($context, 'user', 'icon', 0, $iconfile);
 
-            // Clean up temporary files
+            // Clean up temporary files.
             @unlink($iconfile);
             $fs->delete_area_files($context->id, 'user', 'newicon');
 
-            // Update user record with new picture ID
+            // Update the user record with the new picture ID.
             $updateuser          = new stdClass();
             $updateuser->id      = $user->id;
             $updateuser->picture = $newpicture;
@@ -189,8 +193,7 @@ class telegram
             user_update_user($updateuser);
             return true;
         } catch (\file_exception $e) {
-            return get_string($e->errorcode, $e->module, $e->a);
+            return false;
         }
     }
-
 }

@@ -24,12 +24,11 @@
 
 $string['botusername']           = 'اسم مستخدم البوت';
 $string['botusername_help']      = 'اسم المستخدم لبوت التليجرام';
+$string['hello']                 = 'مرحباااا';
+$string['missingfieldsheader']   = 'مطلوب معلومات إضافية للملف الشخصي';
+$string['missingfieldsmessage']  = 'يرجى تعبئة حقول الملف الشخصي المطلوبة التالية للمتابعة:';
+$string['missingtelegramid']     = 'معرف التلغرام مفقود';
+$string['notenabled']            = 'عذرًا ، لم يتم تمكين البرنامج المساعد المصادق على التلغرام';
 $string['pluginname']            = 'تليجرام';
 $string['telegrambottoken']      = 'رمز البوت';
 $string['telegrambottoken_help'] = ' رمز بوت التليجرام';
-$string['hello']                 = 'مرحباااا';
-$string['notenabled']            = 'عذرًا ، لم يتم تمكين البرنامج المساعد المصادق على التلغرام';
-$string['missingtelegramid']     = 'معرف التلغرام مفقود';
-$string['missingfieldsheader']   = 'مطلوب معلومات إضافية للملف الشخصي';
-$string['missingfieldsmessage']  = 'يرجى تعبئة حقول الملف الشخصي المطلوبة التالية للمتابعة:';
-

@@ -25,6 +25,4 @@ defined('MOODLE_INTERNAL') || die();
  */
 class auth_plugin_telegram extends \auth_telegram\auth
 {
-
-
 }

@@ -17,22 +17,41 @@
 {{!
     @template auth_telegram/script
 
-    TODO describe template script
+    Telegram Login Widget page — renders the official Telegram widget inside
+    a centred login card matching Moodle's login page layout.
+
+    Required context:
+      botusername  string  Telegram bot username (without @).
+      authurl      string  Absolute URL of index.php to receive the signed redirect.
 
     Example context (json):
     {
+        "botusername": "MyLoginBot",
+        "authurl": "https://example.com/auth/telegram/index.php"
     }
 }}
 
-<div class="signupform">
-    <h1 class="login-heading">Continue with Telegram Account</h1>
-    <div class="centered-menu">
-        <script async 
-            src="https://telegram.org/js/telegram-widget.js?22" 
-            data-telegram-login="{{botusername}}" 
-            data-size="large" 
-            data-userpic="true" 
-            data-auth-url="{{authurl}}">
-        </script>
-</div>
+<div class="d-flex justify-content-center align-items-center py-5">
+    <div class="card shadow-sm" style="max-width: 400px; width: 100%;">
+        <div class="card-body text-center p-4">
+            <img src="{{config.wwwroot}}/auth/telegram/pix/telegram_icon.png"
+                 alt="Telegram"
+                 width="48"
+                 height="48"
+                 class="mb-3">
+            <h4 class="card-title mb-1">{{#str}}pluginname, auth_telegram{{/str}}</h4>
+            <p class="text-muted small mb-4">
+                {{#str}}continuewith, auth_telegram{{/str}}
+            </p>
+            <div class="d-flex justify-content-center">
+                <script async
+                    src="https://telegram.org/js/telegram-widget.js?22"
+                    data-telegram-login="{{botusername}}"
+                    data-size="large"
+                    data-userpic="true"
+                    data-auth-url="{{authurl}}">
+                </script>
+            </div>
+        </div>
+    </div>
 </div>

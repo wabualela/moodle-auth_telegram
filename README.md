@@ -1,62 +1,95 @@
-**Moodle Authentication Plugin with Telegram Login Widget**
+# Moodle Telegram Authentication Plugin
 
-Welcome to the Moodle Authentication Plugin with Telegram Login Widget! This plugin allows you to integrate Telegram's secure login functionality directly into your Moodle platform, providing users with a convenient and secure authentication method. This README provides instructions on how to install the plugin, configure Telegram authentication settings, and set up a Telegram bot for authentication purposes.
+Authenticate Moodle users with the official [Telegram Login Widget](https://core.telegram.org/widgets/login). Users click **Continue with Telegram** on the Moodle login page, authorise via Telegram, and land directly on their dashboard — no password required.
 
-**Installation Steps:**
+---
 
-1. **Download the Plugin:**
+## What's new in v1.2
 
-   - Clone the repository or download the plugin ZIP file from the GitHub repository.
+- **Clean page-based login flow** — replaced the old modal/hook approach with a dedicated widget page (`test.php`) that fits naturally into Moodle's login layout.
+- **Configurable required fields** — admins choose which profile fields (core + custom) users must fill in after their first Telegram login.
+- **Security improvements** — timing-safe HMAC comparison (`hash_equals`), session stores only the user ID (not the full user object), proper `AUTH_PASSWORD_NOT_CACHED` password constant.
+- **Bug fixes** — HMAC verification no longer fails when Telegram omits optional fields (`last_name`, `photo_url`, `username`); `update_picture()` now correctly returns `bool` on error.
+- **Moodle coding standard** — zero errors reported by `local/codechecker`.
 
-2. **Upload to Moodle:**
+---
 
-   - Upload the plugin folder to the `auth` directory in your Moodle installation directory.
+## Login flow
 
-3. **Install the Plugin:**
+```
+Moodle login page
+  └─ "Continue with Telegram" button (IDP list)
+       └─ test.php  (Telegram Login Widget)
+            └─ index.php  (HMAC verification + user create/retrieve)
+                 ├─ missingfields.php  (if required fields are empty)
+                 │    └─ Dashboard
+                 └─ Dashboard
+```
 
-   - Log in to your Moodle site as an administrator.
-   - Navigate to **Site Administration** > **Plugins** > **Install plugins**.
-   - Drag and drop the ZIP file containing the plugin or choose the file manually.
-   - Follow the on-screen instructions to complete the installation process.
+---
 
-4. **Enable Telegram Authentication:**
+## Requirements
 
-   - After installation, navigate to **Site Administration** > **Plugins** > **Authentication** > **Manage authentication**.
-   - Enable the "Telegram" authentication method.
+- Moodle 4.2 or later
+- PHP 7.4 or later
+- A Telegram bot created via [@BotFather](https://t.me/BotFather)
 
-5. **Configure Telegram Authentication:**
+---
 
-   - Click on **Settings** next to the Telegram authentication method.
-   - Enter your Telegram bot's username and secret key in the designated fields.
-   - Save the settings.
+## Installation
 
-**Setting Up Telegram Bot:**
+1. Copy the `telegram` folder into `<moodleroot>/auth/`.
+2. Log in as administrator and go to **Site Administration → Notifications** to run the upgrade.
+3. Navigate to **Site Administration → Plugins → Authentication → Manage authentication** and enable **Telegram**.
 
-1. **Create a Telegram Bot:**
+---
 
-   - Open the Telegram app and search for the "BotFather" user.
-   - Start a conversation with BotFather and follow the prompts to create a new bot.
-   - Note down the bot's username provided by BotFather.
+## Configuration
 
-2. **Obtain Bot Token:**
+Go to **Site Administration → Plugins → Authentication → Telegram → Settings**.
 
-   - After creating the bot, BotFather will provide you with a token. Note down this token as it will be used to authenticate your bot with Telegram's API.
+| Setting | Description |
+|---------|-------------|
+| **Bot username** | Your bot's username without the `@` (e.g. `MyLoginBot`). Displayed on the widget page. |
+| **Bot token** | The secret token from BotFather. Used to verify Login Widget signatures server-side. |
+| **Required profile fields** | Profile fields users must complete after their first Telegram login. Leave empty to skip the missing-fields step entirely. |
 
-3. **Add Domain to Bot:**
+### Telegram bot setup
 
-   - To restrict bot access to your domain, navigate to your bot's settings in BotFather.
-   - Add your Moodle site's domain to the allowed domains list.
+1. Open Telegram and start a chat with [@BotFather](https://t.me/BotFather).
+2. Send `/newbot` and follow the prompts. Copy the **token**.
+3. Send `/setdomain` to BotFather, choose your bot, and enter your Moodle site's domain (e.g. `moodle.example.com`). This authorises the Login Widget for your domain.
+4. Paste the token and username into the plugin settings.
 
-4. **Configure Moodle Plugin:**
+---
 
-   - In the Moodle plugin settings, enter your bot's username and secret key in the designated fields.
+## How it works
 
-**Usage:**
+1. The IDP button on the Moodle login page links to `test.php`, which renders the Telegram Login Widget.
+2. After the user authorises, Telegram redirects to `index.php` with signed query parameters.
+3. `index.php` verifies the HMAC signature using `SHA256(bottoken)` as the secret key and checks the data is less than 24 hours old.
+4. A Moodle user is created (username `telegram_<id>`) or retrieved if they have logged in before.
+5. If any configured required fields are empty, the user is redirected to `missingfields.php` to fill them in.
+6. `complete_user_login()` is called and the user is redirected to the dashboard.
 
-Once the plugin is installed and configured, users can log in to Moodle using their Telegram accounts. They will be prompted to authorize the Telegram bot for authentication purposes. After authorization, users can seamlessly log in to Moodle using their Telegram credentials.
+---
 
-**Feedback and Support:**
+## Files
 
-If you encounter any issues during installation or have any questions about the plugin, please don't hesitate to reach out to our support team or submit a GitHub issue. We value your feedback and are committed to providing ongoing support to ensure a smooth experience with our plugin.
+| File | Purpose |
+|------|---------|
+| `auth.php` | Root wrapper — registers the `auth_plugin_telegram` class. |
+| `classes/auth.php` | Auth plugin class; provides `user_login()` and `loginpage_idp_list()`. |
+| `classes/telegram.php` | Static helpers: `create_user()`, `user_exists()`, `get_user()`, `user_login()`, `update_picture()`. |
+| `classes/helper.php` | Field key constants, `get_available_field_options()`, `get_configured_fieldkeys()`, `get_missing_fields()`. |
+| `test.php` | Renders the Telegram Login Widget page. |
+| `index.php` | HMAC callback — verifies signature, creates/retrieves user, redirects. |
+| `missingfields.php` | Collects missing required profile fields after first login. |
+| `settings.php` | Admin settings (bot username, bot token, required fields multiselect). |
+| `templates/script.mustache` | Mustache template for the widget page. |
 
-Thank you for choosing our Moodle Authentication Plugin with Telegram Login Widget. We hope this plugin enhances your Moodle platform's authentication experience for both administrators and users alike.
+---
+
+## License
+
+GNU GPL v3 or later — see [COPYING](http://www.gnu.org/licenses/gpl-3.0.html).

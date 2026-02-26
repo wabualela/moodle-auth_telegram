@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Collect required profile fields that were absent when the Telegram user was created.
+ *
+ * @package    auth_telegram
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once('../../config.php');
 require_once($CFG->dirroot . '/user/profile/lib.php');
 require_once($CFG->dirroot . '/user/lib.php');
@@ -22,63 +30,83 @@ require_once($CFG->libdir . '/formslib.php');
 $PAGE->set_url(new moodle_url('/auth/telegram/missingfields.php'));
 $PAGE->set_context(context_system::instance());
 
-$user = $_SESSION['auth_telegram_pending_user'] ?? null;
-$missing = $_SESSION['auth_telegram_missing_fields'] ?? [];
-$profilefields = $user ? profile_get_user_fields_with_data($user->id) : [];
+// Retrieve pending user ID stored by index.php after Telegram verification.
+$userid = isset($_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID])
+    ? (int) $_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID]
+    : 0;
 
-if (!$user || empty($missing)) {
-    redirect('/');
+if (!$userid) {
+    redirect(new moodle_url('/'));
 }
 
-class auth_telegram_missing_fields_form extends moodleform {
+$user = get_complete_user_data('id', $userid);
+if (!$user) {
+    redirect(new moodle_url('/'));
+}
+
+$missing = \auth_telegram\helper::get_missing_fields($user);
+if (empty($missing)) {
+    // All fields filled — proceed to login.
+    unset($_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID]);
+    \auth_telegram\telegram::user_login($user);
+}
+
+// Load profile field objects for custom fields.
+$profilefields = [];
+foreach (profile_get_user_fields_with_data((int) $user->id) as $pf) {
+    $profilefields[$pf->field->shortname] = $pf;
+}
+
+/**
+ * Form to collect the missing required profile fields for a Telegram-authenticated user.
+ *
+ * @package    auth_telegram
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class auth_telegram_missingfields_form extends moodleform {
+    /**
+     * Form definition — builds inputs for each missing field.
+     */
     public function definition() {
-        $mform = $this->_form;
-        $missing = $this->_customdata['missing'];
+        $mform         = $this->_form;
+        $missing       = $this->_customdata['missing'];
         $profilefields = $this->_customdata['profilefields'];
 
-        foreach ($missing as $key => $label) {
-            if (strpos($key, 'profile_') === 0) {
-                $shortname = substr($key, 8);
-                foreach ($profilefields as $field) {
-                    if ($field->field->shortname === $shortname) {
-                        $field->edit_field_add($mform);
-                        $field->edit_field_set_default($mform);
-                        $mform->addRule('profile_field_' . $shortname, null, 'required', null, 'client');
-                        break;
-                    }
+        foreach ($missing as $fieldkey => $fieldinfo) {
+            if ($fieldinfo['type'] === 'custom') {
+                $shortname = $fieldinfo['shortname'];
+                if (isset($profilefields[$shortname])) {
+                    $pf = $profilefields[$shortname];
+                    $pf->edit_field_add($mform);
+                    $pf->edit_field_set_default($mform);
+                    $mform->addRule('profile_field_' . $shortname, null, 'required', null, 'client');
                 }
-            } else {
-                switch ($key) {
-                    case 'firstname':
-                        $mform->addElement('text', 'firstname', $label);
-                        $mform->setType('firstname', PARAM_NOTAGS);
-                        $mform->addRule('firstname', null, 'required', null, 'client');
-                        break;
-                    case 'lastname':
-                        $mform->addElement('text', 'lastname', $label);
-                        $mform->setType('lastname', PARAM_NOTAGS);
-                        $mform->addRule('lastname', null, 'required', null, 'client');
-                        break;
-                    case 'email':
-                        $mform->addElement('text', 'email', $label);
-                        $mform->setType('email', PARAM_EMAIL);
-                        $mform->addRule('email', null, 'required', null, 'client');
-                        break;
-                    case 'city':
-                        $mform->addElement('text', 'city', $label);
-                        $mform->setType('city', PARAM_TEXT);
-                        $mform->addRule('city', null, 'required', null, 'client');
-                        break;
-                    case 'country':
-                        $countries = get_string_manager()->get_list_of_countries();
-                        $mform->addElement('select', 'country', $label, ['' => ''] + $countries);
-                        $mform->addRule('country', null, 'required', null, 'client');
-                        break;
-                    default:
-                        $mform->addElement('text', $key, $label);
-                        $mform->setType($key, PARAM_TEXT);
-                        $mform->addRule($key, null, 'required', null, 'client');
-                }
+                continue;
+            }
+
+            // Core field.
+            $fieldname = $fieldinfo['fieldname'];
+            $label     = $fieldinfo['label'];
+
+            switch ($fieldname) {
+                case 'email':
+                    $mform->addElement('text', 'email', $label);
+                    $mform->setType('email', PARAM_EMAIL);
+                    $mform->addRule('email', null, 'required', null, 'client');
+                    break;
+
+                case 'country':
+                    $countries = get_string_manager()->get_list_of_countries();
+                    $mform->addElement('select', 'country', $label, ['' => ''] + $countries);
+                    $mform->addRule('country', null, 'required', null, 'client');
+                    break;
+
+                default:
+                    $mform->addElement('text', $fieldname, $label);
+                    $mform->setType($fieldname, PARAM_NOTAGS);
+                    $mform->addRule($fieldname, null, 'required', null, 'client');
+                    break;
             }
         }
 
@@ -86,32 +114,31 @@ class auth_telegram_missing_fields_form extends moodleform {
     }
 }
 
-$form = new auth_telegram_missing_fields_form(null, [
-    'missing' => $missing,
+$form = new auth_telegram_missingfields_form(null, [
+    'missing'       => $missing,
     'profilefields' => $profilefields,
 ]);
 
 if ($data = $form->get_data()) {
-    foreach ($missing as $key => $label) {
-        if (strpos($key, 'profile_') === 0) {
-            $shortname = substr($key, 8);
-            $elementname = 'profile_field_' . $shortname;
-            $user->$elementname = $data->$elementname;
+    foreach ($missing as $fieldkey => $fieldinfo) {
+        if ($fieldinfo['type'] === 'custom') {
+            $elementname        = 'profile_field_' . $fieldinfo['shortname'];
+            $user->$elementname = $data->$elementname ?? null;
         } else {
-            $user->$key = $data->$key;
+            $fieldname       = $fieldinfo['fieldname'];
+            $user->$fieldname = $data->$fieldname ?? '';
         }
     }
+
     user_update_user($user, false);
     profile_save_data($user);
+
+    unset($_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID]);
     \auth_telegram\telegram::user_login($user);
-    $_SESSION['logged-in'] = true;
-    $_SESSION['telegram_id'] = $user->username;
-    unset($_SESSION['auth_telegram_pending_user']);
-    unset($_SESSION['auth_telegram_missing_fields']);
-    redirect('/');
 }
 
 $PAGE->set_heading(get_string('missingfieldsheader', 'auth_telegram'));
+$PAGE->set_pagelayout('login');
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('missingfieldsheader', 'auth_telegram'));

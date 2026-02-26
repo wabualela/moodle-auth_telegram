@@ -23,13 +23,16 @@
  */
 
 $string['botusername']           = 'Bot username';
-$string['botusername_help']      = 'Telegram bot username ';
-$string['pluginname']            = 'Telegram';
-$string['telegrambottoken']      = 'Bot token';
-$string['telegrambottoken_help'] = 'Telegram bot token ';
-$string['hello']                 = 'Hello World';
-$string['notenabled']            = 'Sorry, Telegram authentication plugin is not enabled';
-$string['missingtelegramid']     = 'Missing telegramid';
+$string['botusername_help']      = 'The Telegram bot username (without @) used to display the Login Widget.';
+$string['continuewith']          = 'Click the button below to sign in with your Telegram account.';
+$string['fieldkeycore']          = 'Core: {$a}';
+$string['fieldkeycustom']        = 'Custom: {$a->name} ({$a->shortname})';
 $string['missingfieldsheader']   = 'Additional profile information required';
 $string['missingfieldsmessage']  = 'Please fill in the following required profile fields to continue:';
-
+$string['missingtelegramid']     = 'Missing Telegram hash — the login request is invalid.';
+$string['notenabled']            = 'Sorry, Telegram authentication plugin is not enabled.';
+$string['pluginname']            = 'Telegram';
+$string['requiredfields']        = 'Required profile fields';
+$string['requiredfields_help']   = 'Select the profile fields that users must fill in after their first Telegram login. Leave empty to skip the missing-fields step entirely.';
+$string['telegrambottoken']      = 'Bot token';
+$string['telegrambottoken_help'] = 'The secret token provided by BotFather. Used to verify Telegram Login Widget signatures.';

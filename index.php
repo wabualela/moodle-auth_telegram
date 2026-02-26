@@ -14,108 +14,105 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once('../../config.php');
-require_once($CFG->dirroot . '/user/profile/lib.php');
-require_once($CFG->dirroot . '/user/lib.php');
-
 /**
- * Handle telegram auth
+ * Telegram authentication callback — validates the Telegram Login Widget response,
+ * creates or retrieves the Moodle user, collects any missing required fields, then
+ * completes the login.
+ *
  * @package    auth_telegram
- * @copyright  2023 Mortada ELgaily <mortada.elgaily@gmail.com>
- * @copyright  2024 Wail Abualela <wailabualela@email.com>
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define('BOT_TOKEN', get_config('auth_telegram', 'bottoken'));
+require_once('../../config.php');
+require_once($CFG->dirroot . '/user/lib.php');
 
 $PAGE->set_context(context_system::instance());
 
-if (!isset($_GET['hash'])) { // The Telegram hash is required to authorize.
-    die('Telegram hash not found');
+$hash = optional_param('hash', '', PARAM_ALPHANUMEXT);
+if (empty($hash)) {
+    throw new moodle_exception('missingtelegramid', 'auth_telegram');
 }
 
+// Build userinfo from only the fields Telegram actually sent.
+// Empty values are excluded because Telegram omits optional fields from its hash
+// computation — including them would cause a hash mismatch.
+$rawfields = [
+    'id'         => optional_param('id', '', PARAM_ALPHANUMEXT),
+    'first_name' => optional_param('first_name', '', PARAM_NOTAGS),
+    'last_name'  => optional_param('last_name', '', PARAM_NOTAGS),
+    'username'   => optional_param('username', '', PARAM_ALPHANUMEXT),
+    'photo_url'  => optional_param('photo_url', '', PARAM_URL),
+    'auth_date'  => optional_param('auth_date', '', PARAM_ALPHANUMEXT),
+];
+$userinfo = [];
+foreach ($rawfields as $key => $value) {
+    if ($value !== '') {
+        $userinfo[$key] = $value;
+    }
+}
+$userinfo['hash'] = $hash;
+
 try {
-    $userinfo = check_tel_authorization($_GET);
-    user_authentication($userinfo);
+    $userinfo = auth_telegram_verify($userinfo);
+    auth_telegram_authenticate($userinfo);
 } catch (Exception $e) {
     throw new moodle_exception($e->getMessage());
 }
 
 /**
- * Check telegram auth data
- * @param array $userinfo
- * @throws \Exception
- * @return array
+ * Verify the Telegram Login Widget HMAC signature and data freshness.
+ *
+ * @param  array $userinfo All parameters from the Telegram redirect (including 'hash').
+ * @throws \Exception      When signature is invalid or data is older than 24 hours.
+ * @return array           Verified userinfo (hash key removed).
  */
-function check_tel_authorization($userinfo): array {
+function auth_telegram_verify(array $userinfo): array {
     $checkhash = $userinfo['hash'];
     unset($userinfo['hash']);
+
     $datacheckarr = [];
     foreach ($userinfo as $key => $value) {
         $datacheckarr[] = $key . '=' . $value;
     }
     sort($datacheckarr);
     $datacheckstring = implode("\n", $datacheckarr);
-    $secretkey = hash('sha256', BOT_TOKEN, true);
-    $hash = hash_hmac('sha256', $datacheckstring, $secretkey);
-    if (strcmp($hash, $checkhash) !== 0) {
+
+    $bottoken  = get_config('auth_telegram', 'bottoken');
+    $secretkey = hash('sha256', $bottoken, true);
+    $hash      = hash_hmac('sha256', $datacheckstring, $secretkey);
+
+    if (!hash_equals($hash, $checkhash)) {
         throw new Exception('Data is NOT from Telegram');
     }
-    if ((time() - $userinfo['auth_date']) > 86400) {
+
+    if ((time() - (int) $userinfo['auth_date']) > 86400) {
         throw new Exception('Data is outdated');
     }
+
     return $userinfo;
 }
 
 /**
- * Authenticates a user
- * @param array $userinfo
- * @throws \Exception
+ * Create or retrieve the Moodle user, then log them in (or redirect to missing-fields).
+ *
+ * @param  array $userinfo Verified Telegram user data.
  * @return void
  */
-function user_authentication($userinfo) {
-    $user = \auth_telegram\telegram::user_exists($userinfo['username'])
-        ? \auth_telegram\telegram::get_user($userinfo['username'])
-        : \auth_telegram\telegram::create_user($userinfo);
+function auth_telegram_authenticate(array $userinfo): void {
+    $telegramid = $userinfo['id'];
 
-    $missing = auth_telegram_get_missing_fields($user);
+    if (\auth_telegram\telegram::user_exists($telegramid)) {
+        $user = \auth_telegram\telegram::get_user($telegramid);
+    } else {
+        $user = \auth_telegram\telegram::create_user($userinfo);
+    }
+
+    $missing = \auth_telegram\helper::get_missing_fields($user);
     if (!empty($missing)) {
-        $_SESSION['auth_telegram_pending_user'] = $user;
-        $_SESSION['auth_telegram_missing_fields'] = $missing;
+        $_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID] = (int) $user->id;
         redirect(new moodle_url('/auth/telegram/missingfields.php'));
     }
 
     \auth_telegram\telegram::user_login($user);
-
-    // Mark the session as logged in via Telegram without overwriting existing data.
-    $_SESSION['logged-in'] = true;
-    $_SESSION['telegram_id'] = $userinfo['id'];
 }
-
-/**
- * Check required and custom profile fields for missing values.
- *
- * @param \stdClass $user
- * @return array Associative array of missing field identifiers mapped to labels.
-*/
-function auth_telegram_get_missing_fields($user): array {
-    $missingfields = [];
-
-    $requiredfields = ['firstname', 'lastname', 'email', 'city', 'country'];
-    foreach ($requiredfields as $field) {
-        if (empty($user->$field)) {
-            $missingfields[$field] = get_string($field);
-        }
-    }
-
-    $profilefields = profile_get_user_fields_with_data($user->id);
-    foreach ($profilefields as $field) {
-        if ($field->is_required() && empty($field->data)) {
-            $missingfields['profile_' . $field->field->shortname] = format_string($field->field->name);
-        }
-    }
-
-    return $missingfields;
-}
-
-

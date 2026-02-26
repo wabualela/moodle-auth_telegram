@@ -15,23 +15,27 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * TODO describe file test
+ * Telegram login page — renders the official Telegram Login Widget.
+ *
+ * Users land here from the "Continue with Telegram" identity-provider button on the
+ * main Moodle login page.  After authorising in Telegram the widget redirects the
+ * browser to index.php with the signed user-data parameters.
  *
  * @package    auth_telegram
- * @copyright  2025 Wail Abualela <wailabualela@email.com>
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
 
-$PAGE->set_url(new moodle_url('/auth/telegram/test.php', []));
+$PAGE->set_url(new moodle_url('/auth/telegram/test.php'));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('login');
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('auth_telegram/script', [
-  'botusername' => get_config('auth_telegram', 'bot_username') ?: get_config('auth_telegram', 'botusername'),
-  'authurl'     => new moodle_url('/auth/telegram/index.php') ?: (get_config('auth_telegram', 'auth_url') ?: 'https://nl.moddaker.com')
+    'botusername' => get_config('auth_telegram', 'botusername'),
+    'authurl'     => (new moodle_url('/auth/telegram/index.php'))->out(false),
 ]);
 echo $OUTPUT->footer();

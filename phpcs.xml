@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="MoodleTelegramPlugin">
+    <description>PSR12 with Moodle-compatible naming</description>
+    
+    <!-- Base PSR12 rules -->
+    <rule ref="PSR12">
+        <exclude name="Generic.Functions.FunctionCallSignature.SpaceAfterNot"/>
+    </rule>
+    
+    <!-- Exclude PSR1 class naming (Moodle uses auth_plugin_telegram) -->
+    <rule ref="PSR1.Classes.ClassDeclaration">
+        <severity>0</severity>
+    </rule>
+    
+    <!-- Suppress files with side effects warnings (auth plugins have config.php require) -->
+    <rule ref="PSR1.Files.SideEffects">
+        <severity>0</severity>
+    </rule>
+    
+    <!-- Allow Moodle's snake_case method names in auth plugins -->
+    <rule ref="Generic.NamingConventions.CamelCapsFunctionName.FunctionNotCamelCaps">
+        <properties>
+            <property name="ignoreExceptions" type="array">
+                <element value="loginpage_hook"/>
+                <element value="user_login"/>
+                <element value="loginpage_idp_list"/>
+            </property>
+        </properties>
+    </rule>
+</ruleset>

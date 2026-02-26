@@ -18,22 +18,19 @@ namespace auth_telegram;
 
 defined('MOODLE_INTERNAL') || die();
 
-use moodle_url;
-
 require_once($CFG->libdir . '/authlib.php');
 require_once($CFG->dirroot . '/user/lib.php');
 require_once($CFG->dirroot . '/user/profile/lib.php');
 
 /**
- * Class auth
+ * Telegram authentication class.
  *
  * @package    auth_telegram
- * @copyright  2025 Wail Abualela
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class auth extends \auth_plugin_base
 {
-
     /**
      * Constructor.
      */
@@ -43,35 +40,20 @@ class auth extends \auth_plugin_base
     }
 
     /**
-     * Login page Hook overrides
-     * @return void
+     * User login verification.
+     *
+     * @param string $username
+     * @param string $password
+     * @return bool
      */
-    public function loginpage_hook(): void {
-        global $PAGE;
-
-        $PAGE->requires->js_call_amd('auth_telegram/telegram_login', 'init', [
-            get_config('auth_telegram', 'bot_username') ?: get_config('auth_telegram', 'botusername'),
-            get_config('auth_telegram', 'auth_url') ?: 'https://nl.moddaker.com'
-        ]);
-
-    }
-
     public function user_login($username, $password) {
         global $DB;
-
-        // Check if the user is already logged in.
-        if (isloggedin() && !isguestuser()) {
-            return true;
-        }
-
-        // Check if the user exists in the database.
-        if ($user = $DB->get_record('user', ['username' => $username], '*', MUST_EXIST)) {
-            // Set the user as logged in.
-            complete_user_login($user);
-            return true;
-        }
-
-        return false;
+        return $DB->record_exists('user', [
+            'username' => $username,
+            'auth' => 'telegram',
+            'deleted' => 0,
+            'confirmed' => 1,
+        ]);
     }
 
     /**
@@ -81,15 +63,13 @@ class auth extends \auth_plugin_base
      * @return array List of arrays with keys url, iconurl and name.
      */
     public function loginpage_idp_list($wantsurl) {
-
-
         $result = [];
         if (empty($wantsurl)) {
             $wantsurl = '/';
         }
-        $params   = ['wantsurl' => $wantsurl, 'sesskey' => sesskey()];
-        $url      = new moodle_url('/auth/telegram/test.php', $params);
-        $icon     = new moodle_url('/auth/telegram/pix/telegram_icon.png');
+        $params = ['wantsurl' => $wantsurl, 'sesskey' => sesskey()];
+        $url = new \moodle_url('/auth/telegram/test.php', $params);
+        $icon = new \moodle_url('/auth/telegram/pix/telegram_icon.png');
         $result[] = ['url' => $url, 'iconurl' => $icon, 'name' => 'telegram'];
 
         return $result;

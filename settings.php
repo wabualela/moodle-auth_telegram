@@ -15,25 +15,51 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Admin settings and defaults
+ * Admin settings for the Telegram authentication plugin.
+ *
  * @package    auth_telegram
- * @copyright  2021 Brain Station 23 ltd
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-use auth_telegram\awsotpservice;
 
 defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
-    $settings->add(new admin_setting_heading('auth_telegram/security',
-        new lang_string('security', 'admin'), ''));
-    $settings->add(new admin_setting_configtext('auth_telegram/botusername',
-            get_string('botusername', 'auth_telegram'),
-            get_string('botusername_help', 'auth_telegram'), '', PARAM_TEXT));
+    // Bot credentials.
+    $settings->add(new admin_setting_heading(
+        'auth_telegram/credentials',
+        new lang_string('security', 'admin'),
+        ''
+    ));
 
-    $settings->add(new admin_setting_configtext('auth_telegram/bottoken',
+    $settings->add(new admin_setting_configtext(
+        'auth_telegram/botusername',
+        get_string('botusername', 'auth_telegram'),
+        get_string('botusername_help', 'auth_telegram'),
+        '',
+        PARAM_TEXT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'auth_telegram/bottoken',
         get_string('telegrambottoken', 'auth_telegram'),
-        get_string('telegrambottoken_help', 'auth_telegram'), '', PARAM_TEXT));
+        get_string('telegrambottoken_help', 'auth_telegram'),
+        '',
+        PARAM_TEXT
+    ));
 
+    // Required profile fields.
+    $settings->add(new admin_setting_heading(
+        'auth_telegram/fieldsheading',
+        get_string('requiredfields', 'auth_telegram'),
+        ''
+    ));
+
+    $settings->add(new admin_setting_configmultiselect(
+        'auth_telegram/requiredfields',
+        get_string('requiredfields', 'auth_telegram'),
+        get_string('requiredfields_help', 'auth_telegram'),
+        [],
+        \auth_telegram\helper::get_available_field_options()
+    ));
 }
