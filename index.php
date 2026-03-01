@@ -15,9 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Telegram authentication callback — validates the Telegram Login Widget response,
- * creates or retrieves the Moodle user, collects any missing required fields, then
- * completes the login.
+ * Telegram authentication callback — validates the Telegram Login Widget response
+ * then either logs an existing linked user in or starts the signup flow.
  *
  * @package    auth_telegram
  * @copyright  2026 Wail Abualela <wailabualela@email.com>
@@ -94,25 +93,30 @@ function auth_telegram_verify(array $userinfo): array {
 }
 
 /**
- * Create or retrieve the Moodle user, then log them in (or redirect to missing-fields).
+ * Route the verified Telegram user to the appropriate next step.
+ *
+ * - Existing linked user: check for missing required fields, then log in.
+ * - New user: store Telegram data in session and redirect to signup.php.
  *
  * @param  array $userinfo Verified Telegram user data.
  * @return void
  */
 function auth_telegram_authenticate(array $userinfo): void {
     $telegramid = $userinfo['id'];
+    $userid     = \auth_telegram\api::get_linked_userid($telegramid);
 
-    if (\auth_telegram\telegram::user_exists($telegramid)) {
-        $user = \auth_telegram\telegram::get_user($telegramid);
+    if ($userid) {
+        // Existing linked user — check for any missing configured fields.
+        $user    = \core_user::get_user($userid);
+        $missing = \auth_telegram\helper::get_missing_fields($user);
+        if (!empty($missing)) {
+            $_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID] = $userid;
+            redirect(new moodle_url('/auth/telegram/missingfields.php'));
+        }
+        \auth_telegram\telegram::user_login($user);
     } else {
-        $user = \auth_telegram\telegram::create_user($userinfo);
+        // New user — collect email + phone before creating the account.
+        $_SESSION[\auth_telegram\helper::SESSION_PENDING_TELEGRAM_DATA] = $userinfo;
+        redirect(new moodle_url('/auth/telegram/signup.php'));
     }
-
-    $missing = \auth_telegram\helper::get_missing_fields($user);
-    if (!empty($missing)) {
-        $_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID] = (int) $user->id;
-        redirect(new moodle_url('/auth/telegram/missingfields.php'));
-    }
-
-    \auth_telegram\telegram::user_login($user);
 }

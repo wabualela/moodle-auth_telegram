@@ -33,19 +33,26 @@ use stdClass;
  */
 class telegram {
     /**
-     * Create a new Moodle user from Telegram data.
+     * Create a new Moodle user from signup form data and Telegram identity.
      *
-     * @param array $data Verified Telegram user data.
-     * @return stdClass Newly created user record.
+     * The caller is responsible for calling api::link_login() afterwards to
+     * record the Telegram→Moodle mapping in auth_telegram_linked_login.
+     *
+     * @param string $email       Verified email address from the signup form.
+     * @param string $phone       Phone number from the signup form.
+     * @param array  $telegramdata Verified Telegram user data (id, first_name, last_name, photo_url).
+     * @return stdClass Newly created user record with ->id populated.
      */
-    public static function create_user($data): stdClass {
-        global $CFG, $DB;
+    public static function create_user(string $email, string $phone, array $telegramdata): stdClass {
+        global $CFG;
 
         $user                    = new stdClass();
         $user->auth              = 'telegram';
-        $user->username          = 'telegram_' . $data['id'];
-        $user->firstname         = $data['first_name'] ?? '';
-        $user->lastname          = $data['last_name'] ?? '';
+        $user->username          = clean_username($email);
+        $user->email             = $email;
+        $user->phone1            = $phone;
+        $user->firstname         = $telegramdata['first_name'] ?? '';
+        $user->lastname          = $telegramdata['last_name'] ?? '';
         $user->confirmed         = 1;
         $user->mnethostid        = $CFG->mnet_localhost_id;
         $user->firstaccess       = time();
@@ -55,8 +62,6 @@ class telegram {
         $user->currentlogin      = time();
         $user->lastip            = getremoteaddr();
         $user->password          = AUTH_PASSWORD_NOT_CACHED;
-        $user->email             = '';
-        $user->phone1            = '';
         $user->calendartype      = $CFG->calendartype;
         $user->firstnamephonetic = '';
         $user->lastnamephonetic  = '';
@@ -69,51 +74,15 @@ class telegram {
 
         profile_save_data($user);
 
-        self::update_picture($user, $data['photo_url'] ?? '');
+        self::update_picture($user, $telegramdata['photo_url'] ?? '');
 
         return $user;
     }
 
     /**
-     * Check if a Moodle user exists for the given Telegram ID.
-     *
-     * @param string $telegramid Telegram numeric user ID.
-     * @return bool True if the user exists, false otherwise.
-     */
-    public static function user_exists($telegramid): bool {
-        global $DB;
-        return $DB->record_exists(
-            'user',
-            [
-                'username'  => 'telegram_' . $telegramid,
-                'deleted'   => 0,
-                'confirmed' => 1,
-            ],
-        );
-    }
-
-    /**
-     * Retrieve a Moodle user by Telegram ID.
-     *
-     * @param string $telegramid Telegram numeric user ID.
-     * @return stdClass User record matching the Telegram ID.
-     */
-    public static function get_user($telegramid): stdClass {
-        global $DB;
-        return $DB->get_record(
-            'user',
-            [
-                'username'  => 'telegram_' . $telegramid,
-                'deleted'   => 0,
-                'confirmed' => 1,
-            ],
-        );
-    }
-
-    /**
      * Complete the Moodle login session for the given user.
      *
-     * @param \stdClass  $user     The user to log in.
+     * @param \stdClass   $user     The user to log in.
      * @param string|null $wantsurl Optional redirect URL after login.
      * @return void
      */

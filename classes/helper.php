@@ -29,6 +29,9 @@ class helper {
     /** @var string Session key used to store the pending user ID during missing-fields collection. */
     public const SESSION_PENDING_USERID = 'auth_telegram_pending_userid';
 
+    /** @var string Session key used to store verified Telegram user data while the user completes signup. */
+    public const SESSION_PENDING_TELEGRAM_DATA = 'auth_telegram_pending_data';
+
     /** @var array Core user fields available to mark as required. */
     public const CORE_FIELDS = ['firstname', 'lastname', 'email', 'city', 'country', 'phone1'];
 
