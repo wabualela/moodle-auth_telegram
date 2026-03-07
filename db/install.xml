@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="auth/telegram/db" VERSION="20260301" COMMENT="XMLDB file for Moodle auth/telegram"
+<XMLDB PATH="auth/telegram/db" VERSION="20260302" COMMENT="XMLDB file for Moodle auth/telegram"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="auth_telegram_linked_login" COMMENT="Links Moodle users to their Telegram accounts">
+    <TABLE NAME="auth_telegram_linked_login" COMMENT="Links Moodle user accounts to Telegram identities">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Moodle user ID"/>
         <FIELD NAME="telegramid" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="" COMMENT="Telegram numeric user ID"/>
-        <FIELD NAME="confirmtoken" TYPE="char" LENGTH="64" NOTNULL="true" DEFAULT="" COMMENT="Pending confirmation token; empty once confirmed"/>
-        <FIELD NAME="confirmtokenexpires" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Token expiry as Unix timestamp; 0 once confirmed"/>
+        <FIELD NAME="confirmtoken" TYPE="char" LENGTH="64" NOTNULL="true" DEFAULT="" COMMENT="Empty = confirmed link; non-empty = pending email confirmation"/>
+        <FIELD NAME="confirmtokenexpires" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Unix timestamp when the confirmtoken expires"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
       </FIELDS>

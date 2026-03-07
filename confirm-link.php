@@ -32,7 +32,6 @@ $PAGE->set_url(new moodle_url('/auth/telegram/confirm-link.php'));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('login');
 
-// Check whether this is a confirmation click (all three params present) or the info page.
 $token      = optional_param('token', '', PARAM_ALPHANUMEXT);
 $userid     = optional_param('userid', 0, PARAM_INT);
 $telegramid = optional_param('telegramid', '', PARAM_ALPHANUMEXT);
@@ -40,7 +39,6 @@ $telegramid = optional_param('telegramid', '', PARAM_ALPHANUMEXT);
 $isconfirmation = ($token !== '' && $userid > 0 && $telegramid !== '');
 
 if ($isconfirmation) {
-    // Token-based confirmation: validate and activate the link.
     $confirmed = \auth_telegram\api::confirm_link_login($userid, $telegramid, $token);
 
     $PAGE->set_heading(get_string('confirmlinkedheader', 'auth_telegram'));
@@ -49,24 +47,12 @@ if ($isconfirmation) {
 
     if ($confirmed) {
         echo html_writer::tag('p', get_string('confirmlinkedmessage', 'auth_telegram'));
-        echo $OUTPUT->single_button(
-            new moodle_url('/login/index.php'),
-            get_string('login'),
-            'get'
-        );
     } else {
-        \core\notification::error(get_string('confirmationinvalid', 'auth_telegram'));
         echo html_writer::tag('p', get_string('confirmationinvalid', 'auth_telegram'));
-        echo $OUTPUT->single_button(
-            new moodle_url('/login/index.php'),
-            get_string('login'),
-            'get'
-        );
     }
-
+    echo $OUTPUT->single_button(new moodle_url('/login/index.php'), get_string('login'), 'get');
     echo $OUTPUT->footer();
 } else {
-    // Info page: shown immediately after signup.php sends the confirmation email.
     $email = isset($_SESSION['auth_telegram_confirm_email'])
         ? $_SESSION['auth_telegram_confirm_email']
         : '';
@@ -85,10 +71,6 @@ if ($isconfirmation) {
         'auth_telegram',
         html_writer::tag('strong', s($email))
     ));
-    echo $OUTPUT->single_button(
-        new moodle_url('/login/index.php'),
-        get_string('login'),
-        'get'
-    );
+    echo $OUTPUT->single_button(new moodle_url('/login/index.php'), get_string('login'), 'get');
     echo $OUTPUT->footer();
 }

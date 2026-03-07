@@ -25,7 +25,7 @@ require_once($CFG->dirroot . '/user/profile/lib.php');
 use stdClass;
 
 /**
- * Telegram user management helper.
+ * Telegram user management helpers.
  *
  * @package    auth_telegram
  * @copyright  2026 Wail Abualela <wailabualela@email.com>
@@ -33,24 +33,21 @@ use stdClass;
  */
 class telegram {
     /**
-     * Create a new Moodle user from signup form data and Telegram identity.
+     * Create a new Moodle user from the signup email and Telegram identity.
      *
-     * The caller is responsible for calling api::link_login() afterwards to
-     * record the Telegram→Moodle mapping in auth_telegram_linked_login.
+     * The caller is responsible for calling api::link_login() afterwards.
      *
-     * @param string $email       Verified email address from the signup form.
-     * @param string $phone       Phone number from the signup form.
-     * @param array  $telegramdata Verified Telegram user data (id, first_name, last_name, photo_url).
+     * @param string $email        Verified email address from the signup form.
+     * @param array  $telegramdata Verified Telegram user data.
      * @return stdClass Newly created user record with ->id populated.
      */
-    public static function create_user(string $email, string $phone, array $telegramdata): stdClass {
+    public static function create_user(string $email, array $telegramdata): stdClass {
         global $CFG;
 
         $user                    = new stdClass();
         $user->auth              = 'telegram';
         $user->username          = clean_username($email);
         $user->email             = $email;
-        $user->phone1            = $phone;
         $user->firstname         = $telegramdata['first_name'] ?? '';
         $user->lastname          = $telegramdata['last_name'] ?? '';
         $user->confirmed         = 1;
@@ -100,9 +97,6 @@ class telegram {
     /**
      * Update a user's profile picture from a Telegram photo URL.
      *
-     * Returns false early when the user already has a picture, gravatar is
-     * enabled, or no photo URL was supplied.
-     *
      * @param \stdClass $user     User whose picture should be updated.
      * @param string    $photourl Telegram photo URL (may be empty).
      * @return bool True on success, false otherwise.
@@ -118,18 +112,15 @@ class telegram {
             return false;
         }
 
-        // Download image content from URL.
         $imagedata = download_file_content($photourl);
         if (empty($imagedata)) {
             return false;
         }
 
-        // Create temporary storage for the new image.
         $context = \context_user::instance($user->id);
         $fs      = get_file_storage();
         $fs->delete_area_files($context->id, 'user', 'newicon');
 
-        // Store the image data in a temporary file area.
         $filerecord = [
             'contextid' => $context->id,
             'component' => 'user',
@@ -139,22 +130,17 @@ class telegram {
             'filename'  => 'image',
         ];
 
-        // Process the image and set it as the user's picture.
         try {
             $fs->create_file_from_string($filerecord, $imagedata);
-            // Get the stored file and copy to a temporary path.
             $iconfile = $fs->get_area_files($context->id, 'user', 'newicon', false, 'itemid', false);
             $iconfile = reset($iconfile);
             $iconfile = $iconfile->copy_content_to_temp();
 
-            // Process the image into the proper user icon format.
             $newpicture = (int) process_new_icon($context, 'user', 'icon', 0, $iconfile);
 
-            // Clean up temporary files.
             @unlink($iconfile);
             $fs->delete_area_files($context->id, 'user', 'newicon');
 
-            // Update the user record with the new picture ID.
             $updateuser          = new stdClass();
             $updateuser->id      = $user->id;
             $updateuser->picture = $newpicture;

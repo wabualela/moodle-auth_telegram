@@ -15,11 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Registration page for new Telegram-authenticated users.
+ * Email-collection form for new Telegram-authenticated users.
  *
- * Shown after HMAC verification when no existing Moodle account is linked
- * to the Telegram ID.  Collects email and phone, then either creates a new
- * account or starts the email-confirmation flow to link an existing one.
+ * Shown after HMAC verification when no existing Moodle account is linked to
+ * the Telegram ID.  Collects the user's email, then either:
+ *  - Creates a new Moodle account and logs the user in directly, or
+ *  - Sends a confirmation email to an existing Moodle account asking them
+ *    to confirm the Telegram link.
  *
  * @package    auth_telegram
  * @copyright  2026 Wail Abualela <wailabualela@email.com>
@@ -27,25 +29,21 @@
  */
 
 require_once('../../config.php');
-require_once($CFG->dirroot . '/user/lib.php');
-require_once($CFG->dirroot . '/user/profile/lib.php');
 require_once($CFG->libdir . '/formslib.php');
 
 $PAGE->set_url(new moodle_url('/auth/telegram/signup.php'));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('login');
 
-// Require pending Telegram data placed by index.php.
-$telegramdata = isset($_SESSION[\auth_telegram\helper::SESSION_PENDING_TELEGRAM_DATA])
-    ? $_SESSION[\auth_telegram\helper::SESSION_PENDING_TELEGRAM_DATA]
-    : null;
+$wantsurl     = optional_param('wantsurl', '', PARAM_LOCALURL);
+$telegramdata = $_SESSION['auth_telegram_pending_data'] ?? null;
 
 if (empty($telegramdata)) {
     redirect(new moodle_url('/'));
 }
 
 /**
- * Signup form for new Telegram users — collects email and phone.
+ * Email-collection form for new Telegram users.
  *
  * @package    auth_telegram
  * @copyright  2026 Wail Abualela <wailabualela@email.com>
@@ -62,11 +60,7 @@ class auth_telegram_signup_form extends moodleform {
         $mform->setType('email', PARAM_RAW_TRIMMED);
         $mform->addRule('email', get_string('missingemail'), 'required', null, 'client');
 
-        $mform->addElement('text', 'phone1', get_string('phone1'), ['size' => 20]);
-        $mform->setType('phone1', PARAM_NOTAGS);
-        $mform->addRule('phone1', get_string('missingphone'), 'required', null, 'client');
-
-        $this->add_action_buttons(false, get_string('signup'));
+        $this->add_action_buttons(false, get_string('continue'));
     }
 
     /**
@@ -88,37 +82,25 @@ class auth_telegram_signup_form extends moodleform {
 $form = new auth_telegram_signup_form();
 
 if ($data = $form->get_data()) {
-    $email  = core_text::strtolower(trim($data->email));
-    $phone  = trim($data->phone1);
+    $email      = core_text::strtolower(trim($data->email));
+    $telegramid = $telegramdata['id'];
 
-    // Check whether an existing Moodle account uses this email.
-    $existinguser = \core_user::get_user_by_email($email, '*', null, IGNORE_MULTIPLE);
+    unset($_SESSION['auth_telegram_pending_data']);
 
-    if (empty($existinguser)) {
-        // No existing account — create a new one, link it, then log in.
-        $user = \auth_telegram\telegram::create_user($email, $phone, $telegramdata);
-        \auth_telegram\api::link_login($user->id, $telegramdata['id']);
+    $moodleuser = \core_user::get_user_by_email($email);
 
-        unset($_SESSION[\auth_telegram\helper::SESSION_PENDING_TELEGRAM_DATA]);
-
-        // Redirect to missingfields if there are other required fields outstanding.
-        $missing = \auth_telegram\helper::get_missing_fields($user);
-        if (!empty($missing)) {
-            $_SESSION[\auth_telegram\helper::SESSION_PENDING_USERID] = (int) $user->id;
-            redirect(new moodle_url('/auth/telegram/missingfields.php'));
-        }
-
-        \auth_telegram\telegram::user_login($user);
-    } else {
-        // Email belongs to an existing account — send a confirmation link.
-        \auth_telegram\api::send_confirm_link_login_email($telegramdata, $existinguser);
-
-        unset($_SESSION[\auth_telegram\helper::SESSION_PENDING_TELEGRAM_DATA]);
-
-        // Store the email so the info page can display it.
-        $_SESSION['auth_telegram_confirm_email'] = $existinguser->email;
+    if ($moodleuser) {
+        // Existing Moodle account — send confirmation email and show info page.
+        $_SESSION['auth_telegram_confirm_email'] = $email;
+        \auth_telegram\api::send_confirm_link_login_email($telegramdata, $moodleuser);
         redirect(new moodle_url('/auth/telegram/confirm-link.php'));
     }
+
+    // New email — create Moodle account, link to Telegram, and log in.
+    $newuser = \auth_telegram\telegram::create_user($email, $telegramdata);
+    \auth_telegram\api::link_login($newuser->id, $telegramid);
+    \auth_telegram\telegram::user_login($newuser, $wantsurl ?: null);
+    // user_login() redirects; execution does not continue.
 }
 
 $PAGE->set_heading(get_string('signup', 'auth_telegram'));

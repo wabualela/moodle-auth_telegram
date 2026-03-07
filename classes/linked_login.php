@@ -23,7 +23,6 @@ use core\persistent;
 /**
  * Persistent class for the auth_telegram_linked_login table.
  *
- * Stores the mapping between a Moodle user ID and a Telegram account ID.
  * A record with an empty confirmtoken is a fully confirmed (active) link.
  * A record with a non-empty confirmtoken is pending email confirmation.
  *
@@ -57,20 +56,5 @@ class linked_login extends persistent {
                 'default' => 0,
             ],
         ];
-    }
-
-    /**
-     * Return true if a confirmed (active) link exists for the given Telegram ID.
-     *
-     * @param string $telegramid Telegram numeric user ID.
-     * @return bool
-     */
-    public static function has_confirmed_link(string $telegramid): bool {
-        global $DB;
-        return $DB->record_exists_select(
-            static::TABLE,
-            "telegramid = :telegramid AND confirmtoken = ''",
-            ['telegramid' => $telegramid]
-        );
     }
 }

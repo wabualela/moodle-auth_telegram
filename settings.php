@@ -48,18 +48,5 @@ if ($ADMIN->fulltree) {
         PARAM_TEXT
     ));
 
-    // Required profile fields.
-    $settings->add(new admin_setting_heading(
-        'auth_telegram/fieldsheading',
-        get_string('requiredfields', 'auth_telegram'),
-        ''
-    ));
 
-    $settings->add(new admin_setting_configmultiselect(
-        'auth_telegram/requiredfields',
-        get_string('requiredfields', 'auth_telegram'),
-        get_string('requiredfields_help', 'auth_telegram'),
-        [],
-        \auth_telegram\helper::get_available_field_options()
-    ));
 }

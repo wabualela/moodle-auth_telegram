@@ -18,14 +18,14 @@
  * Telegram authentication plugin version information
  *
  * @package    auth_telegram
- * @copyright  2021 Brain Station 23 ltd
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026030100;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2026030200;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2022041900;        // Requires this Moodle version.
 $plugin->component = 'auth_telegram';   // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.4.0';
+$plugin->release   = '2.0.0';

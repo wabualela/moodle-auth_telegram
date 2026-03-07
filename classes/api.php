@@ -32,34 +32,20 @@ class api {
     /**
      * Return the Moodle user ID linked to the given Telegram ID, or 0 if none.
      *
-     * Checks the link table first, then falls back to the legacy
-     * username=telegram_<id> pattern for v1.2 users.
-     *
      * @param string $telegramid Telegram numeric user ID.
      * @return int Moodle user ID, or 0 if not found.
      */
     public static function get_linked_userid(string $telegramid): int {
         global $DB;
 
-        // Check the link table first (v1.4+).
         $record = $DB->get_record_select(
             linked_login::TABLE,
             "telegramid = :telegramid AND confirmtoken = ''",
             ['telegramid' => $telegramid],
             'userid'
         );
-        if ($record) {
-            return (int) $record->userid;
-        }
 
-        // Legacy fallback: v1.2 users stored as telegram_<id> username.
-        $user = $DB->get_record_select(
-            'user',
-            "username = :username AND auth = 'telegram' AND deleted = 0 AND confirmed = 1",
-            ['username' => 'telegram_' . $telegramid],
-            'id'
-        );
-        return $user ? (int) $user->id : 0;
+        return $record ? (int) $record->userid : 0;
     }
 
     /**
@@ -70,7 +56,6 @@ class api {
      * @return void
      */
     public static function link_login(int $userid, string $telegramid): void {
-        // Avoid duplicate confirmed links.
         if (self::get_linked_userid($telegramid) === $userid) {
             return;
         }
@@ -109,7 +94,6 @@ class api {
         $login = new linked_login(0, $record);
         $login->create();
 
-        // Build confirmation URL.
         $params = [
             'token'      => $token,
             'userid'     => $moodleuser->id,
@@ -117,7 +101,6 @@ class api {
         ];
         $confirmurl = new \moodle_url('/auth/telegram/confirm-link.php', $params);
 
-        // Build email content.
         $site        = get_site();
         $supportuser = \core_user::get_support_user();
 
@@ -127,11 +110,7 @@ class api {
         $data->admin     = generate_email_signoff();
         $data->link      = $confirmurl->out(false);
 
-        $subject     = get_string(
-            'confirmlinkemail_subject',
-            'auth_telegram',
-            format_string($site->fullname)
-        );
+        $subject     = get_string('confirmlinkemail_subject', 'auth_telegram', format_string($site->fullname));
         $message     = get_string('confirmlinkemail', 'auth_telegram', $data);
         $messagehtml = text_to_html($message, false, false);
 
@@ -163,13 +142,11 @@ class api {
             return false;
         }
 
-        // Reject expired tokens.
         if (time() > $login->get('confirmtokenexpires')) {
             $login->delete();
             return false;
         }
 
-        // Activate the link by clearing the token.
         $login->set('confirmtoken', '');
         $login->set('confirmtokenexpires', 0);
         $login->update();
