@@ -25,6 +25,8 @@
 $string['botusername']              = 'اسم مستخدم البوت';
 $string['botusername_help']         = 'اسم المستخدم لبوت التليجرام (بدون @).';
 $string['confirmationinvalid']      = 'رابط التأكيد غير صالح أو انتهت صلاحيته. يرجى المحاولة مرة أخرى.';
+$string['confirmlinkedheader']      = 'تم ربط حساب تيليجرام';
+$string['confirmlinkedmessage']     = 'تم ربط حساب تيليجرام الخاص بك بنجاح. يمكنك الآن تسجيل الدخول باستخدام تيليجرام.';
 $string['confirmlinkemail']         = 'مرحباً {$a->firstname}،
 
 تم تقديم طلب لربط حساب مودل الخاص بك على {$a->sitename} بحساب تيليجرام.
@@ -37,8 +39,6 @@ $string['confirmlinkemail']         = 'مرحباً {$a->firstname}،
 
 {$a->admin}';
 $string['confirmlinkemail_subject'] = 'تأكيد ربط حساب تيليجرام على {$a}';
-$string['confirmlinkedheader']      = 'تم ربط حساب تيليجرام';
-$string['confirmlinkedmessage']     = 'تم ربط حساب تيليجرام الخاص بك بنجاح. يمكنك الآن تسجيل الدخول باستخدام تيليجرام.';
 $string['confirmlinksent']          = 'تم إرسال رسالة التأكيد';
 $string['continuewith']             = 'انقر على الزر أدناه لتسجيل الدخول بحساب تيليجرام.';
 $string['emailexistsmessage']       = 'يوجد حساب بعنوان البريد الإلكتروني {$a} في مودل بالفعل. تم إرسال رسالة تأكيد إلى ذلك العنوان. يرجى النقر على الرابط الوارد في البريد الإلكتروني لربط حساب تيليجرام الخاص بك.';

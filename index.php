@@ -37,7 +37,7 @@ $PAGE->set_context(context_system::instance());
 $hash     = optional_param('hash', '', PARAM_ALPHANUMEXT);
 $wantsurl = optional_param('wantsurl', '', PARAM_LOCALURL);
 
-// ── Mode 1: No hash — render the Telegram Login Widget ──────────────────────
+// Mode 1: No hash — render the Telegram Login Widget.
 if (empty($hash)) {
     $PAGE->set_url(new moodle_url('/auth/telegram/index.php', ['wantsurl' => $wantsurl]));
     $PAGE->set_heading($SITE->fullname);
@@ -55,7 +55,7 @@ if (empty($hash)) {
     exit;
 }
 
-// ── Mode 2: Telegram callback — verify HMAC and route ───────────────────────
+// Mode 2: Telegram callback — verify HMAC and route.
 
 // Build userinfo from only the fields Telegram actually sent (empty values would
 // break the hash check because Telegram omits optional fields from its computation).
@@ -130,7 +130,7 @@ function auth_telegram_authenticate(array $userinfo, string $wantsurl): void {
         $moodleuser = \core_user::get_user($userid);
         if ($moodleuser) {
             \auth_telegram\telegram::user_login($moodleuser, $wantsurl ?: null);
-            // user_login() redirects; execution does not continue.
+            // Execution does not continue; user_login() always redirects.
         }
     }
 

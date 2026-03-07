@@ -25,6 +25,8 @@
 $string['botusername']              = 'Bot username';
 $string['botusername_help']         = 'The Telegram bot username (without @) used to display the Login Widget.';
 $string['confirmationinvalid']      = 'The confirmation link is invalid or has expired. Please try again.';
+$string['confirmlinkedheader']      = 'Telegram account linked';
+$string['confirmlinkedmessage']     = 'Your Telegram account has been successfully linked. You can now sign in using Telegram.';
 $string['confirmlinkemail']         = 'Hi {$a->firstname},
 
 A request was made to link your Moodle account on {$a->sitename} to a Telegram account.
@@ -37,8 +39,6 @@ This link is valid for 30 minutes.
 
 {$a->admin}';
 $string['confirmlinkemail_subject'] = 'Confirm Telegram account link on {$a}';
-$string['confirmlinkedheader']      = 'Telegram account linked';
-$string['confirmlinkedmessage']     = 'Your Telegram account has been successfully linked. You can now sign in using Telegram.';
 $string['confirmlinksent']          = 'Confirmation email sent';
 $string['continuewith']             = 'Click the button below to sign in with your Telegram account.';
 $string['emailexistsmessage']       = 'An account with the email address {$a} already exists in Moodle. A confirmation email has been sent to that address. Please click the link in the email to link your Telegram account.';

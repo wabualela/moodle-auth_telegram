@@ -100,7 +100,7 @@ if ($data = $form->get_data()) {
     $newuser = \auth_telegram\telegram::create_user($email, $telegramdata);
     \auth_telegram\api::link_login($newuser->id, $telegramid);
     \auth_telegram\telegram::user_login($newuser, $wantsurl ?: null);
-    // user_login() redirects; execution does not continue.
+    // Execution does not continue; user_login() always redirects.
 }
 
 $PAGE->set_heading(get_string('signup', 'auth_telegram'));

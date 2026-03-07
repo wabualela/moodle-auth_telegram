@@ -47,6 +47,4 @@ if ($ADMIN->fulltree) {
         '',
         PARAM_TEXT
     ));
-
-
 }

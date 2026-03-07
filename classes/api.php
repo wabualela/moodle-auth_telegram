@@ -16,8 +16,6 @@
 
 namespace auth_telegram;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * API methods for the Telegram auth plugin.
  *

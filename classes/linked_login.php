@@ -16,8 +16,6 @@
 
 namespace auth_telegram;
 
-defined('MOODLE_INTERNAL') || die();
-
 use core\persistent;
 
 /**
