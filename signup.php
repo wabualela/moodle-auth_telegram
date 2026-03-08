@@ -39,7 +39,7 @@ $wantsurl     = optional_param('wantsurl', '', PARAM_LOCALURL);
 $telegramdata = $_SESSION['auth_telegram_pending_data'] ?? null;
 
 if (empty($telegramdata)) {
-    redirect(new moodle_url('/'));
+    redirect(new moodle_url('/auth/telegram/index.php'));
 }
 
 /**
@@ -82,7 +82,7 @@ class auth_telegram_signup_form extends moodleform {
 $form = new auth_telegram_signup_form();
 
 if ($data = $form->get_data()) {
-    $email      = core_text::strtolower(trim($data->email));
+    $email      = core_text::strtolower($data->email);
     $telegramid = $telegramdata['id'];
 
     unset($_SESSION['auth_telegram_pending_data']);
@@ -92,7 +92,7 @@ if ($data = $form->get_data()) {
     if ($moodleuser) {
         // Existing Moodle account — send confirmation email and show info page.
         $_SESSION['auth_telegram_confirm_email'] = $email;
-        \auth_telegram\api::send_confirm_link_login_email($telegramdata, $moodleuser);
+        \auth_telegram\api::send_confirm_link_login_email($telegramdata, $moodleuser, $wantsurl);
         redirect(new moodle_url('/auth/telegram/confirm-link.php'));
     }
 

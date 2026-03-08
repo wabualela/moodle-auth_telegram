@@ -76,9 +76,14 @@ class api {
      *
      * @param array     $telegramdata Verified Telegram user data (must include 'id').
      * @param \stdClass $moodleuser   The existing Moodle user whose email we send to.
+     * @param string    $wantsurl     Optional redirect URL to preserve after confirmation.
      * @return bool True on success.
      */
-    public static function send_confirm_link_login_email(array $telegramdata, \stdClass $moodleuser): bool {
+    public static function send_confirm_link_login_email(
+        array $telegramdata,
+        \stdClass $moodleuser,
+        string $wantsurl = ''
+    ): bool {
         $token   = random_string(32);
         $expires = new \DateTime('NOW');
         $expires->add(new \DateInterval('PT30M'));
@@ -97,6 +102,9 @@ class api {
             'userid'     => $moodleuser->id,
             'telegramid' => $telegramdata['id'],
         ];
+        if (!empty($wantsurl)) {
+            $params['wantsurl'] = $wantsurl;
+        }
         $confirmurl = new \moodle_url('/auth/telegram/confirm-link.php', $params);
 
         $site        = get_site();

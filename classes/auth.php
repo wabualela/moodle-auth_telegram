@@ -65,7 +65,7 @@ class auth extends \auth_plugin_base {
         if (empty($wantsurl)) {
             $wantsurl = '/';
         }
-        $params = ['wantsurl' => $wantsurl, 'sesskey' => sesskey()];
+        $params = ['wantsurl' => $wantsurl];
         $url    = new \moodle_url('/auth/telegram/index.php', $params);
         $icon   = new \moodle_url('/auth/telegram/pix/telegram_icon.png');
         $result[] = ['url' => $url, 'iconurl' => $icon, 'name' => 'Telegram'];

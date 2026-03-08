@@ -1,0 +1,12 @@
+/**
+ * Styles for auth_telegram plugin.
+ *
+ * @package    auth_telegram
+ * @copyright  2026 Wail Abualela <wailabualela@email.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+.auth-telegram-widget {
+    max-width: 400px;
+    width: 100%;
+}

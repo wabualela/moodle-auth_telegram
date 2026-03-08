@@ -35,6 +35,7 @@ $PAGE->set_pagelayout('login');
 $token      = optional_param('token', '', PARAM_ALPHANUMEXT);
 $userid     = optional_param('userid', 0, PARAM_INT);
 $telegramid = optional_param('telegramid', '', PARAM_ALPHANUMEXT);
+$wantsurl   = optional_param('wantsurl', '', PARAM_LOCALURL);
 
 $isconfirmation = ($token !== '' && $userid > 0 && $telegramid !== '');
 
@@ -50,7 +51,11 @@ if ($isconfirmation) {
     } else {
         echo html_writer::tag('p', get_string('confirmationinvalid', 'auth_telegram'));
     }
-    echo $OUTPUT->single_button(new moodle_url('/login/index.php'), get_string('login'), 'get');
+    $loginurl = new moodle_url('/login/index.php');
+    if (!empty($wantsurl)) {
+        $loginurl->param('wantsurl', $wantsurl);
+    }
+    echo $OUTPUT->single_button($loginurl, get_string('login'), 'get');
     echo $OUTPUT->footer();
 } else {
     $email = isset($_SESSION['auth_telegram_confirm_email'])
@@ -60,7 +65,7 @@ if ($isconfirmation) {
     unset($_SESSION['auth_telegram_confirm_email']);
 
     if (empty($email)) {
-        redirect(new moodle_url('/'));
+        redirect(new moodle_url('/auth/telegram/index.php'));
     }
 
     $PAGE->set_heading(get_string('confirmlinksent', 'auth_telegram'));

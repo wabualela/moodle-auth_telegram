@@ -40,6 +40,7 @@ $wantsurl = optional_param('wantsurl', '', PARAM_LOCALURL);
 // Mode 1: No hash — render the Telegram Login Widget.
 if (empty($hash)) {
     $PAGE->set_url(new moodle_url('/auth/telegram/index.php', ['wantsurl' => $wantsurl]));
+    $PAGE->set_title(get_string('pluginname', 'auth_telegram'));
     $PAGE->set_heading($SITE->fullname);
     $PAGE->set_pagelayout('login');
 
