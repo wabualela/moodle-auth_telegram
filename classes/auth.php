@@ -57,19 +57,53 @@ class auth extends \auth_plugin_base {
     /**
      * Return a list of identity providers to display on the login page.
      *
+     * The rendered link acts as the anchor point that loginpage_hook() replaces
+     * with the live Telegram widget when JavaScript is available. It also serves
+     * as a functional fallback when JavaScript is disabled.
+     *
      * @param string|\moodle_url $wantsurl The requested URL.
      * @return array List of arrays with keys url, iconurl and name.
      */
     public function loginpage_idp_list($wantsurl) {
-        $result = [];
+        if (!$this->is_ready()) {
+            return [];
+        }
         if (empty($wantsurl)) {
             $wantsurl = '/';
         }
         $params = ['wantsurl' => $wantsurl];
         $url    = new \moodle_url('/auth/telegram/index.php', $params);
         $icon   = new \moodle_url('/auth/telegram/pix/telegram_icon.png');
-        $result[] = ['url' => $url, 'iconurl' => $icon, 'name' => 'Telegram'];
 
-        return $result;
+        return [['url' => $url, 'iconurl' => $icon, 'name' => 'Telegram']];
+    }
+
+    /**
+     * Inject the Telegram Login Widget directly on the login page.
+     *
+     * Loads the auth_telegram/login AMD module which finds the IDP button
+     * rendered by loginpage_idp_list() and replaces it with the live widget.
+     */
+    public function loginpage_hook() {
+        global $PAGE;
+
+        if (!$this->is_ready()) {
+            return;
+        }
+
+        $wantsurl    = optional_param('wantsurl', '', PARAM_LOCALURL) ?: '/';
+        $authurl     = (new \moodle_url('/auth/telegram/index.php', ['wantsurl' => $wantsurl]))->out(false);
+        $botusername = $this->config->botusername;
+
+        $PAGE->requires->js_call_amd('auth_telegram/login', 'init', [$authurl, $botusername]);
+    }
+
+    /**
+     * Return true when the plugin has both bot credentials configured.
+     *
+     * @return bool
+     */
+    private function is_ready(): bool {
+        return !empty($this->config->bottoken) && !empty($this->config->botusername);
     }
 }
