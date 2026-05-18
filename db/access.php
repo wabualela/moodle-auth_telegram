@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Telegram authentication plugin version information
+ * Capability definitions for the Telegram auth plugin.
  *
  * @package    auth_telegram
  * @copyright  2026 Wail Abualela <wailabualela@email.com>
@@ -24,8 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026051800;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2022041900;        // Requires this Moodle version.
-$plugin->component = 'auth_telegram';   // Full name of the plugin (used for diagnostics).
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '2.2.0';
+$capabilities = [
+    'auth/telegram:managelinkedlogins' => [
+        'captype'      => 'write',
+        'contextlevel' => CONTEXT_USER,
+        'archetypes'   => [
+            'user' => CAP_ALLOW,
+        ],
+    ],
+];

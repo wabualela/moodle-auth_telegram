@@ -22,6 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['addlinkedlogin']           = 'ربط حساب تيليجرام';
+$string['alreadylinked']            = 'حساب تيليجرام هذا مرتبط بالفعل بملفك الشخصي.';
+$string['alreadylinkedother']       = 'حساب تيليجرام هذا مرتبط بالفعل بحساب مودل آخر.';
 $string['botusername']              = 'اسم مستخدم البوت';
 $string['botusername_help']         = 'اسم المستخدم لبوت التليجرام (بدون @).';
 $string['confirmationinvalid']      = 'رابط التأكيد غير صالح أو انتهت صلاحيته. يرجى المحاولة مرة أخرى.';
@@ -42,10 +45,16 @@ $string['confirmlinkemail_subject'] = 'تأكيد ربط حساب تيليجرا
 $string['confirmlinksent']          = 'تم إرسال رسالة التأكيد';
 $string['continuewith']             = 'انقر على الزر أدناه لتسجيل الدخول بحساب تيليجرام.';
 $string['emailexistsmessage']       = 'يوجد حساب بعنوان البريد الإلكتروني {$a} في مودل بالفعل. تم إرسال رسالة تأكيد إلى ذلك العنوان. يرجى النقر على الرابط الوارد في البريد الإلكتروني لربط حساب تيليجرام الخاص بك.';
+$string['linkedlogins']             = 'حسابات تيليجرام المرتبطة';
+$string['linkedloginshelp']         = 'إدارة حسابات تيليجرام المرتبطة بحسابك في مودل.';
+$string['linkedsince']              = 'مرتبط منذ';
 $string['missingtelegramid']        = 'معرف التلغرام مفقود — طلب الدخول غير صالح.';
+$string['nolinkedlogins']           = 'لا توجد حسابات تيليجرام مرتبطة بملفك الشخصي.';
+$string['notwhileloggedinas']       = 'لا يمكن إدارة الحسابات المرتبطة أثناء تسجيل الدخول كمستخدم آخر.';
 $string['notenabled']               = 'عذراً، لم يتم تفعيل إضافة مصادقة تيليجرام.';
 $string['pluginname']               = 'تيليجرام';
 $string['signup']                   = 'أكمل تسجيلك';
 $string['signupdesc']               = 'تم التحقق من حساب تيليجرام الخاص بك. يرجى تقديم عنوان بريدك الإلكتروني لإتمام إنشاء حساب مودل.';
+$string['telegramid']               = 'معرّف تيليجرام';
 $string['telegrambottoken']         = 'رمز البوت';
 $string['telegrambottoken_help']    = 'الرمز السري الذي يوفره BotFather. يُستخدم للتحقق من توقيعات أداة تسجيل الدخول عبر تيليجرام.';

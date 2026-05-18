@@ -46,7 +46,7 @@ class telegram {
 
         $user                    = new stdClass();
         $user->auth              = 'telegram';
-        $user->username          = clean_username($email);
+        $user->username          = clean_param($email, PARAM_USERNAME);
         $user->email             = $email;
         $user->firstname         = $telegramdata['first_name'] ?? '';
         $user->lastname          = $telegramdata['last_name'] ?? '';
@@ -84,14 +84,19 @@ class telegram {
      * @return void
      */
     public static function user_login($user, $wantsurl = null) {
+        global $SESSION;
+
         complete_user_login($user);
         \core\session\manager::apply_concurrent_login_limit($user->id, session_id());
 
-        if ($wantsurl) {
-            redirect($wantsurl);
-        } else {
-            redirect('/');
+        // Fall back to $SESSION->wantsurl (set by require_login() when it redirected
+        // to the login page), then clear it — same pattern as login/index.php.
+        if (empty($wantsurl) && !empty($SESSION->wantsurl)) {
+            $wantsurl = $SESSION->wantsurl;
         }
+        unset($SESSION->wantsurl);
+
+        redirect(new moodle_url($wantsurl ?: '/'));
     }
 
     /**
@@ -112,7 +117,7 @@ class telegram {
             return false;
         }
 
-        $imagedata = download_file_content($photourl);
+        $imagedata = download_file_content($photourl, null, null, false, 10, 5);
         if (empty($imagedata)) {
             return false;
         }

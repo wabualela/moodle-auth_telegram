@@ -126,6 +126,74 @@ class api {
     }
 
     /**
+     * Delete all linked logins for a user when their Moodle account is deleted.
+     *
+     * Registered as an observer for \core\event\user_deleted in db/events.php,
+     * mirroring the auth_oauth2 pattern.
+     *
+     * @param \core\event\user_deleted $event
+     * @return bool
+     */
+    public static function user_deleted(\core\event\user_deleted $event): bool {
+        global $DB;
+
+        return $DB->delete_records(linked_login::TABLE, ['userid' => $event->objectid]);
+    }
+
+    /**
+     * Return all confirmed linked logins for a user.
+     *
+     * Requires auth/telegram:managelinkedlogins capability at the user context,
+     * mirroring the auth_oauth2 pattern.
+     *
+     * @param int|false $userid Defaults to the current user.
+     * @return linked_login[]
+     */
+    public static function get_linked_logins($userid = false): array {
+        global $USER;
+
+        if ($userid === false) {
+            $userid = $USER->id;
+        }
+
+        if (\core\session\manager::is_loggedinas()) {
+            throw new \moodle_exception('notwhileloggedinas', 'auth_telegram');
+        }
+
+        $context = \context_user::instance($userid);
+        require_capability('auth/telegram:managelinkedlogins', $context);
+
+        return linked_login::get_records(['userid' => $userid, 'confirmtoken' => '']);
+    }
+
+    /**
+     * Delete a confirmed linked login owned by the current user.
+     *
+     * Requires auth/telegram:managelinkedlogins capability at the user context.
+     *
+     * @param int $linkedloginid The ID of the linked_login record to delete.
+     * @return void
+     */
+    public static function delete_linked_login(int $linkedloginid): void {
+        global $USER;
+
+        if (\core\session\manager::is_loggedinas()) {
+            throw new \moodle_exception('notwhileloggedinas', 'auth_telegram');
+        }
+
+        $login = linked_login::get_record([
+            'id'           => $linkedloginid,
+            'userid'       => $USER->id,
+            'confirmtoken' => '',
+        ], MUST_EXIST);
+
+        $context = \context_user::instance($login->get('userid'));
+        require_capability('auth/telegram:managelinkedlogins', $context);
+
+        $login->delete();
+    }
+
+    /**
      * Validate a pending confirmation token and activate the Telegram link.
      *
      * @param int    $userid     Moodle user ID.

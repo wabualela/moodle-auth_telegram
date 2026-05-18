@@ -19,11 +19,13 @@
  *
  * Two modes depending on whether Telegram's signed callback parameters are present:
  *
- *  1. No 'hash' param  → render the Telegram Login Widget (was test.php).
- *  2. 'hash' param     → verify HMAC signature, resolve or start account flow:
- *       - Existing linked user: look up their Moodle account and log them in.
- *       - New / unlinked user: store Telegram data in session and redirect to
- *         signup.php to collect an email address.
+ *  1. No 'hash' param  → render the Telegram Login Widget.
+ *       - Guest / not logged in: login flow.
+ *       - Already logged in: account-linking flow (widget shown with standard layout).
+ *  2. 'hash' param     → verify HMAC signature and route:
+ *       - Already logged in: link the Telegram identity to the current account.
+ *       - Not logged in, existing link: log the user in.
+ *       - Not logged in, no link: redirect to signup.php to collect an email.
  *
  * @package    auth_telegram
  * @copyright  2026 Wail Abualela <wailabualela@email.com>
@@ -37,12 +39,21 @@ $PAGE->set_context(context_system::instance());
 $hash     = optional_param('hash', '', PARAM_ALPHANUMEXT);
 $wantsurl = optional_param('wantsurl', '', PARAM_LOCALURL);
 
+$loggedin = isloggedin() && !isguestuser();
+
 // Mode 1: No hash — render the Telegram Login Widget.
 if (empty($hash)) {
     $PAGE->set_url(new moodle_url('/auth/telegram/index.php', ['wantsurl' => $wantsurl]));
     $PAGE->set_title(get_string('pluginname', 'auth_telegram'));
     $PAGE->set_heading($SITE->fullname);
-    $PAGE->set_pagelayout('login');
+    // Use standard layout for logged-in users (linking), login layout for guests.
+    $PAGE->set_pagelayout($loggedin ? 'standard' : 'login');
+
+    // Persist wantsurl to session so it survives the Telegram widget redirect,
+    // mirroring the standard Moodle login/index.php pattern.
+    if (!empty($wantsurl)) {
+        $SESSION->wantsurl = (new moodle_url($wantsurl))->out(false);
+    }
 
     // Build the callback URL that the widget will redirect to (this same page).
     $authurl = new moodle_url('/auth/telegram/index.php', ['wantsurl' => $wantsurl]);
@@ -73,9 +84,47 @@ $userinfo['hash'] = $hash;
 
 try {
     $userinfo = auth_telegram_verify($userinfo);
-    auth_telegram_authenticate($userinfo, $wantsurl);
+    if ($loggedin) {
+        auth_telegram_link_account($userinfo, $wantsurl);
+    } else {
+        auth_telegram_authenticate($userinfo, $wantsurl);
+    }
 } catch (Exception $e) {
     throw new moodle_exception($e->getMessage());
+}
+
+/**
+ * Link a verified Telegram identity to the currently logged-in Moodle account.
+ *
+ * Called in Mode 2 when the user is already authenticated. Covers three cases:
+ *  - Already linked to this user: show info, redirect to linkedlogins.php.
+ *  - Linked to a different user: show error, redirect to linkedlogins.php.
+ *  - Not linked yet: create the link, redirect to linkedlogins.php with success.
+ *
+ * @param array  $userinfo Verified Telegram user data.
+ * @param string $wantsurl Redirect URL after linking (falls back to linkedlogins.php).
+ * @return void
+ */
+function auth_telegram_link_account(array $userinfo, string $wantsurl): void {
+    global $USER;
+
+    $telegramid   = $userinfo['id'];
+    $linkeduserid = \auth_telegram\api::get_linked_userid($telegramid);
+    $returnurl    = new moodle_url($wantsurl ?: '/auth/telegram/linkedlogins.php');
+
+    if ($linkeduserid === (int) $USER->id) {
+        redirect($returnurl, get_string('alreadylinked', 'auth_telegram'), null,
+            \core\output\notification::NOTIFY_INFO);
+    }
+
+    if ($linkeduserid !== 0) {
+        redirect($returnurl, get_string('alreadylinkedother', 'auth_telegram'), null,
+            \core\output\notification::NOTIFY_ERROR);
+    }
+
+    \auth_telegram\api::link_login((int) $USER->id, $telegramid);
+    redirect($returnurl, get_string('changessaved'), null,
+        \core\output\notification::NOTIFY_SUCCESS);
 }
 
 /**
@@ -115,6 +164,9 @@ function auth_telegram_verify(array $userinfo): array {
  * Route the verified Telegram user to the appropriate next step.
  *
  * For existing linked users: looks up their Moodle account and logs them in.
+ * - Suspended accounts are rejected back to the login page.
+ * - Deleted accounts fall through to the new-user signup flow so the
+ *   Telegram identity can be re-linked to a fresh Moodle account.
  *
  * For new / unlinked users: stores Telegram data in session and redirects
  * to signup.php to collect an email address.
@@ -124,18 +176,30 @@ function auth_telegram_verify(array $userinfo): array {
  * @return void
  */
 function auth_telegram_authenticate(array $userinfo, string $wantsurl): void {
+    global $SESSION;
+
     $telegramid = $userinfo['id'];
     $userid     = \auth_telegram\api::get_linked_userid($telegramid);
 
     if ($userid) {
-        $moodleuser = \core_user::get_user($userid);
-        if ($moodleuser) {
+        // get_complete_user_data() excludes deleted users (AND deleted <> 1).
+        $moodleuser = get_complete_user_data('id', $userid);
+
+        if ($moodleuser && !$moodleuser->suspended) {
             \auth_telegram\telegram::user_login($moodleuser, $wantsurl ?: null);
             // Execution does not continue; user_login() always redirects.
         }
+
+        if ($moodleuser && $moodleuser->suspended) {
+            // Suspended — deny access.
+            $SESSION->loginerrormsg = get_string('invalidlogin');
+            redirect(new moodle_url('/login/index.php'));
+        }
+
+        // Linked Moodle account was deleted — fall through to new-user signup flow.
     }
 
-    // New or unlinked user — collect email via signup form.
+    // New, unlinked, or previously-deleted user — collect email via signup form.
     $_SESSION['auth_telegram_pending_data'] = $userinfo;
     redirect(new moodle_url('/auth/telegram/signup.php', ['wantsurl' => $wantsurl]));
 }

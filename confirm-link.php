@@ -42,26 +42,39 @@ $isconfirmation = ($token !== '' && $userid > 0 && $telegramid !== '');
 if ($isconfirmation) {
     $confirmed = \auth_telegram\api::confirm_link_login($userid, $telegramid, $token);
 
+    if ($confirmed) {
+        // Token valid — load the user and log them in automatically, mirroring
+        // the auth_oauth2 confirm-linkedlogin.php pattern.
+        if (!$user = get_complete_user_data('id', $userid)) {
+            throw new moodle_exception('cannotfinduser', '', '', $userid);
+        }
+
+        complete_user_login($user);
+        \core\session\manager::apply_concurrent_login_limit($user->id, session_id());
+
+        redirect(new moodle_url($wantsurl ?: '/'));
+    }
+
+    // Invalid or expired token.
     $PAGE->set_heading(get_string('confirmlinkedheader', 'auth_telegram'));
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('confirmlinkedheader', 'auth_telegram'));
-
-    if ($confirmed) {
-        echo html_writer::tag('p', get_string('confirmlinkedmessage', 'auth_telegram'));
-    } else {
-        echo html_writer::tag('p', get_string('confirmationinvalid', 'auth_telegram'));
-    }
+    echo html_writer::tag('p', get_string('confirmationinvalid', 'auth_telegram'));
     $loginurl = new moodle_url('/login/index.php');
     if (!empty($wantsurl)) {
         $loginurl->param('wantsurl', $wantsurl);
     }
     echo $OUTPUT->single_button($loginurl, get_string('login'), 'get');
     echo $OUTPUT->footer();
-} else {
-    $email = isset($_SESSION['auth_telegram_confirm_email'])
-        ? $_SESSION['auth_telegram_confirm_email']
-        : '';
 
+} else {
+    // Info page shown after signup.php sends the confirmation email.
+    // A logged-in user has no business here.
+    if (isloggedin() && !isguestuser()) {
+        redirect(new moodle_url($wantsurl ?: '/'));
+    }
+
+    $email = $_SESSION['auth_telegram_confirm_email'] ?? '';
     unset($_SESSION['auth_telegram_confirm_email']);
 
     if (empty($email)) {

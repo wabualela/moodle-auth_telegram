@@ -22,6 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['addlinkedlogin']           = 'Link a Telegram account';
+$string['alreadylinked']            = 'This Telegram account is already linked to your profile.';
+$string['alreadylinkedother']       = 'This Telegram account is already linked to a different Moodle account.';
 $string['botusername']              = 'Bot username';
 $string['botusername_help']         = 'The Telegram bot username (without @) used to display the Login Widget.';
 $string['confirmationinvalid']      = 'The confirmation link is invalid or has expired. Please try again.';
@@ -42,10 +45,16 @@ $string['confirmlinkemail_subject'] = 'Confirm Telegram account link on {$a}';
 $string['confirmlinksent']          = 'Confirmation email sent';
 $string['continuewith']             = 'Click the button below to sign in with your Telegram account.';
 $string['emailexistsmessage']       = 'An account with the email address {$a} already exists in Moodle. A confirmation email has been sent to that address. Please click the link in the email to link your Telegram account.';
+$string['linkedlogins']             = 'Telegram linked logins';
+$string['linkedloginshelp']         = 'Manage the Telegram accounts that are linked to your Moodle account.';
+$string['linkedsince']              = 'Linked since';
 $string['missingtelegramid']        = 'Missing Telegram hash — the login request is invalid.';
+$string['nolinkedlogins']           = 'You have no Telegram accounts linked to your profile.';
+$string['notwhileloggedinas']       = 'Linked logins cannot be managed while logged in as another user.';
 $string['notenabled']               = 'Sorry, Telegram authentication plugin is not enabled.';
 $string['pluginname']               = 'Telegram';
 $string['signup']                   = 'Complete your registration';
 $string['signupdesc']               = 'Your Telegram account has been verified. Please provide your email address to complete your Moodle account registration.';
+$string['telegramid']               = 'Telegram ID';
 $string['telegrambottoken']         = 'Bot token';
 $string['telegrambottoken_help']    = 'The secret token provided by BotFather. Used to verify Telegram Login Widget signatures.';

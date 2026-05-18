@@ -36,6 +36,11 @@ $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('login');
 
 $wantsurl     = optional_param('wantsurl', '', PARAM_LOCALURL);
+
+if (isloggedin() && !isguestuser()) {
+    redirect(new moodle_url($wantsurl ?: '/'));
+}
+
 $telegramdata = $_SESSION['auth_telegram_pending_data'] ?? null;
 
 if (empty($telegramdata)) {
@@ -99,6 +104,8 @@ if ($data = $form->get_data()) {
     // New email — create Moodle account, link to Telegram, and log in.
     $newuser = \auth_telegram\telegram::create_user($email, $telegramdata);
     \auth_telegram\api::link_login($newuser->id, $telegramid);
+    // Reload from DB so all columns (policyagreed, etc.) are present before login.
+    $newuser = get_complete_user_data('id', $newuser->id);
     \auth_telegram\telegram::user_login($newuser, $wantsurl ?: null);
     // Execution does not continue; user_login() always redirects.
 }
