@@ -96,7 +96,7 @@ class telegram {
         }
         unset($SESSION->wantsurl);
 
-        redirect(new moodle_url($wantsurl ?: '/'));
+        redirect(new \moodle_url($wantsurl ?: '/'));
     }
 
     /**

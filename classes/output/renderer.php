@@ -64,7 +64,7 @@ class renderer extends plugin_renderer_base {
                 'linkedloginid'  => $linkedlogin->get('id'),
                 'sesskey'        => sesskey(),
             ];
-            $deleteurl  = new moodle_url('/auth/telegram/linkedlogins.php', $deleteparams);
+            $deleteurl  = new \moodle_url('/auth/telegram/linkedlogins.php', $deleteparams);
             $deletelink = html_writer::link(
                 $deleteurl,
                 $this->pix_icon('t/delete', get_string('delete')),
