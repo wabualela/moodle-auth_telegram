@@ -72,8 +72,6 @@ class telegram {
 
         profile_save_data($user);
 
-        self::update_picture($user, $telegramdata['photo_url'] ?? '');
-
         return $user;
     }
 
@@ -108,7 +106,7 @@ class telegram {
      * @return bool True on success, false otherwise.
      */
     public static function update_picture($user, $photourl): bool {
-        global $CFG, $USER;
+        global $CFG;
 
         if (!empty($user->picture) || !empty($CFG->enablegravatar)) {
             return false;
@@ -125,35 +123,31 @@ class telegram {
 
         $context = \context_user::instance($user->id);
         $fs      = get_file_storage();
-        $fs->delete_area_files($context->id, 'user', 'newicon');
-
-        $filerecord = [
-            'contextid' => $context->id,
-            'component' => 'user',
-            'filearea'  => 'newicon',
-            'itemid'    => 0,
-            'filepath'  => '/',
-            'filename'  => 'image',
-        ];
 
         try {
+            // Delete any existing profile pictures.
+            $fs->delete_area_files($context->id, 'user', 'icon');
+
+            // Create a unique filename for the picture.
+            $filename = 'f' . (int) $user->id;
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'user',
+                'filearea'  => 'icon',
+                'itemid'    => 0,
+                'filepath'  => '/',
+                'filename'  => $filename,
+            ];
+
             $fs->create_file_from_string($filerecord, $imagedata);
-            $iconfile = $fs->get_area_files($context->id, 'user', 'newicon', false, 'itemid', false);
-            $iconfile = reset($iconfile);
-            $iconfile = $iconfile->copy_content_to_temp();
 
-            $newpicture = (int) process_new_icon($context, 'user', 'icon', 0, $iconfile);
-
-            @unlink($iconfile);
-            $fs->delete_area_files($context->id, 'user', 'newicon');
-
+            // Set picture to 1 (just a flag indicating a picture exists).
             $updateuser          = new stdClass();
             $updateuser->id      = $user->id;
-            $updateuser->picture = $newpicture;
-            $USER->picture       = $newpicture;
+            $updateuser->picture = 1;
             user_update_user($updateuser);
             return true;
-        } catch (\file_exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
     }
